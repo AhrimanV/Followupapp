@@ -233,7 +233,8 @@ button.full {
 }
 
 .field input,
-.field textarea {
+.field textarea,
+.field select {
   border-radius: 10px;
   border: 1px solid #e5e7eb;
   padding: 10px 12px;
@@ -439,4 +440,58 @@ button.full {
 
 .callout.visible {
   display: block;
+}
+
+.task-assignment {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: end;
+  margin-bottom: 16px;
+}
+
+.task-summary {
+  border-top: 1px solid #e5e7eb;
+  padding-top: 16px;
+}
+
+.task-summary-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.task-summary ul,
+.task-pool {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.task-summary li,
+.task-pool-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  background: #f8fafc;
+}
+
+.task-meta {
+  display: grid;
+  gap: 4px;
+}
+
+.task-meta small {
+  color: #6b7280;
+}
+
+.pill.muted {
+  background: #e2e8f0;
+  color: #475569;
 }
