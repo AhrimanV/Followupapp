@@ -102,11 +102,13 @@ const elements = {
   taskTitleInput: document.getElementById("task-title-input"),
   taskCategoryInput: document.getElementById("task-category-input"),
   taskNotesInput: document.getElementById("task-notes-input"),
+  taskProofRequiredInput: document.getElementById("task-proof-required-input"),
   addTaskButton: document.getElementById("add-task-button"),
   bulkAddButton: document.getElementById("bulk-add-button"),
   taskPoolList: document.getElementById("task-pool-list"),
   taskAssignee: document.getElementById("detail-task-assignee"),
   taskAssigneeEmail: document.getElementById("detail-task-email"),
+  taskProofRequired: document.getElementById("detail-task-proof"),
   viewAsSelect: document.getElementById("view-as-select"),
   viewAsBanner: document.getElementById("view-as-banner"),
   generateReportButton: document.getElementById("generate-report-button"),
@@ -253,6 +255,7 @@ function renderTaskDetail() {
     elements.taskCategory.textContent = "";
     elements.taskAudit.textContent = "";
     elements.taskDue.textContent = "";
+    elements.taskProofRequired.textContent = "";
     elements.taskStatus.textContent = "";
     elements.taskSubmission.textContent = "";
     elements.taskAssignee.textContent = "";
@@ -279,6 +282,8 @@ function renderTaskDetail() {
   elements.taskCategory.textContent = task.category;
   elements.taskAudit.textContent = `${audit.id} · ${audit.storeName}`;
   elements.taskDue.textContent = formatDate(task.dueDate);
+  const requiresProof = task.requiresProof !== false;
+  elements.taskProofRequired.textContent = requiresProof ? "Yes" : "No";
   elements.taskStatus.textContent = task.status;
   elements.taskSubmission.textContent = task.submissions.length;
   elements.taskAssignee.textContent = task.assignedTo || "Unassigned";
@@ -287,10 +292,10 @@ function renderTaskDetail() {
   elements.managerNotes.value = task.managerNotes || "";
   elements.proofNotes.value = task.pendingProof?.notes || "";
   elements.proofGallery.innerHTML = "";
-  elements.proofGallery.classList.remove("hidden");
+  elements.proofGallery.classList.toggle("hidden", !requiresProof);
 
   const submission = task.submissions[task.submissions.length - 1];
-  if (submission?.photos?.length) {
+  if (requiresProof && submission?.photos?.length) {
     submission.photos.forEach((photo) => {
       const img = document.createElement("div");
       img.className = "gallery-item";
@@ -419,6 +424,12 @@ function renderAuditTaskSummary() {
             task.assignedTo || ""
           }" placeholder="Search M365 contact" />
         </label>
+        <label class="field field-inline">
+          <input type="checkbox" data-task-proof="${task.id}" ${
+            task.requiresProof !== false ? "checked" : ""
+          } />
+          Proof required
+        </label>
       </div>
       <label class="field">
         Manager notes
@@ -485,6 +496,12 @@ function renderAuditTaskSummary() {
       task.assignedEmail = match?.email || "";
       task.assignedUserId = users.find((user) => user.email === match?.email)?.id || null;
       renderTaskList();
+      renderStoreManager();
+    });
+
+    item.querySelector("[data-task-proof]").addEventListener("change", (event) => {
+      task.requiresProof = event.target.checked;
+      renderTaskDetail();
       renderStoreManager();
     });
 
@@ -801,7 +818,7 @@ function reorderAuditTasks(audit, draggedId, targetId) {
   audit.tasks = tasks;
 }
 
-function createTemplate({ title, category, notes }) {
+function createTemplate({ title, category, notes, requiresProof }) {
   const trimmedTitle = title.trim();
   if (!trimmedTitle) return null;
   const id = generateTemplateId();
@@ -810,6 +827,7 @@ function createTemplate({ title, category, notes }) {
     title: trimmedTitle,
     category: category.trim() || "General",
     notes: notes.trim() || "",
+    requiresProof: requiresProof === undefined ? true : requiresProof,
   };
   store.taskTemplates.push(template);
   return template;
@@ -828,6 +846,7 @@ function assignTemplateToAudit(templateId, audit) {
     assignedUserId: null,
     assignedEmail: "",
     managerNotes: template.notes || "",
+    requiresProof: template.requiresProof ?? true,
     status: TaskStatus.NOT_STARTED,
     submissions: [],
     pendingProof: {
@@ -882,11 +901,15 @@ elements.addTaskButton.addEventListener("click", () => {
   const title = elements.taskTitleInput.value;
   const category = elements.taskCategoryInput.value;
   const notes = elements.taskNotesInput.value;
-  const template = createTemplate({ title, category, notes });
+  const requiresProof = elements.taskProofRequiredInput?.checked;
+  const template = createTemplate({ title, category, notes, requiresProof });
   if (!template) return;
   elements.taskTitleInput.value = "";
   elements.taskCategoryInput.value = "";
   elements.taskNotesInput.value = "";
+  if (elements.taskProofRequiredInput) {
+    elements.taskProofRequiredInput.checked = true;
+  }
   renderExistingTaskOptions();
   renderTaskPool();
 });
@@ -898,7 +921,7 @@ elements.bulkAddButton.addEventListener("click", () => {
     const category = chip.dataset.category || "General";
     const exists = store.taskTemplates.some((template) => template.title === title);
     if (!exists) {
-      createTemplate({ title, category, notes: "" });
+      createTemplate({ title, category, notes: "", requiresProof: true });
     }
   });
   renderExistingTaskOptions();
