@@ -1,1 +1,15 @@
+Followupapp is a lightweight, front-end-only demo for tracking follow-up tasks and reminders. It runs entirely in the browser and uses static demo data to illustrate the UI and interactions.
 
+Open locally
+1. Open `index.html` directly in your browser (double-click it or use File → Open).
+2. No build step or server is required.
+
+Key files
+- `index.html`: Main page markup and app container.
+- `styles.css`: Global styles and layout for the UI.
+- `app.js`: Client-side behavior and demo data handling.
+- `build-package.md`: Packaging/build notes for distributing the static app.
+
+Limitations
+- Static demo data only (no persistence).
+- No backend/API; everything runs in the browser.
