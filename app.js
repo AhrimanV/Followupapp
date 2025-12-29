@@ -87,6 +87,50 @@ const store = {
       },
       reviewerNotes: "",
     },
+    {
+      id: "TSK-1004",
+      title: "Back room exit lighting",
+      dueDate: "2025-03-06",
+      assignedTo: "Morgan Lee",
+      status: TaskStatus.PROOF_SUBMITTED,
+      submissions: [
+        {
+          id: "SUB-1",
+          submittedAt: "2025-02-18T15:10:00Z",
+          status: TaskStatus.PROOF_SUBMITTED,
+          notes: "Installed new fixtures near loading bay.",
+          photos: ["IMG_2041.jpg", "IMG_2042.jpg"],
+          reviewerNotes: "",
+        },
+      ],
+      pendingProof: {
+        notes: "",
+        photos: [],
+      },
+      reviewerNotes: "",
+    },
+    {
+      id: "TSK-1005",
+      title: "Safety poster refresh",
+      dueDate: "2025-03-08",
+      assignedTo: "Morgan Lee",
+      status: TaskStatus.APPROVED,
+      submissions: [
+        {
+          id: "SUB-1",
+          submittedAt: "2025-02-16T09:18:00Z",
+          status: TaskStatus.APPROVED,
+          notes: "Updated posters in break room and back office.",
+          photos: ["IMG_2100.jpg"],
+          reviewerNotes: "Looks good.",
+        },
+      ],
+      pendingProof: {
+        notes: "",
+        photos: [],
+      },
+      reviewerNotes: "Looks good.",
+    },
   ],
   audits: [
     {
@@ -95,6 +139,13 @@ const store = {
       storeName: "Toronto Midtown",
       createdAt: "2025-02-12",
       taskIds: ["TSK-1001", "TSK-1002", "TSK-1003"],
+    },
+    {
+      id: "AUD-2025-002",
+      storeCode: "QC-118",
+      storeName: "Montreal East",
+      createdAt: "2025-02-15",
+      taskIds: ["TSK-1004", "TSK-1005"],
     },
   ],
 };
@@ -186,6 +237,60 @@ function getTask(taskId) {
 function getAuditTasks(audit = getAudit()) {
   if (!audit) return [];
   return audit.taskIds.map((taskId) => getTask(taskId)).filter(Boolean);
+}
+
+function formatDateRange(dates) {
+  const validDates = dates
+    .map((date) => (date ? new Date(date) : null))
+    .filter((date) => date && !Number.isNaN(date.valueOf()));
+  if (!validDates.length) return "No due dates";
+  const sortedDates = validDates.sort((a, b) => a - b);
+  const start = sortedDates[0];
+  const end = sortedDates[sortedDates.length - 1];
+  if (start.toDateString() === end.toDateString()) {
+    return `Due ${formatDate(start)}`;
+  }
+  return `Due window ${formatDate(start)} - ${formatDate(end)}`;
+}
+
+function getReviewerQueueAudits() {
+  return store.audits
+    .map((audit) => {
+      const auditTasks = getAuditTasks(audit);
+      const submittedTasks = auditTasks.filter((task) => task.submissions.length);
+      if (!submittedTasks.length) return null;
+      const tasksToConfirm = submittedTasks.filter(
+        (task) => task.status === TaskStatus.PROOF_SUBMITTED,
+      ).length;
+      return {
+        audit,
+        submittedTasks,
+        tasksToConfirm,
+        submittedCount: submittedTasks.length,
+        dueWindow: formatDateRange(submittedTasks.map((task) => task.dueDate)),
+      };
+    })
+    .filter(Boolean);
+}
+
+function getLatestPendingSubmission() {
+  const pendingSubmissions = [];
+  store.audits.forEach((audit) => {
+    const auditTasks = getAuditTasks(audit);
+    auditTasks.forEach((task) => {
+      const latestSubmission = task.submissions[task.submissions.length - 1];
+      if (task.status === TaskStatus.PROOF_SUBMITTED && latestSubmission) {
+        pendingSubmissions.push({ audit, task, submission: latestSubmission });
+      }
+    });
+  });
+  if (!pendingSubmissions.length) return null;
+  return pendingSubmissions.reduce((latest, entry) => {
+    if (!latest) return entry;
+    return new Date(entry.submission.submittedAt) > new Date(latest.submission.submittedAt)
+      ? entry
+      : latest;
+  }, null);
 }
 
 function getUnassignedTasks(audit = getAudit()) {
@@ -310,13 +415,12 @@ function renderTaskDetail() {
 function renderReviewerQueue() {
   elements.reviewerQueueList.innerHTML = "";
 
-  const pending = getAuditTasks().filter((task) => task.status === TaskStatus.PROOF_SUBMITTED);
-  if (pending.length) {
-    const newest = pending[0];
-    elements.queueAlertText.textContent = `${newest.title} · Submission ${newest.submissions.length}`;
+  const latestPending = getLatestPendingSubmission();
+  if (latestPending) {
+    elements.queueAlertText.textContent = `${latestPending.task.title} · ${latestPending.audit.id}`;
     elements.queueAlert.classList.remove("hidden");
     elements.queueAlertAction.onclick = () => {
-      state.selectedTaskId = newest.id;
+      state.selectedTaskId = latestPending.task.id;
       renderTaskDetail();
       switchScreen("task-detail");
     };
@@ -324,25 +428,58 @@ function renderReviewerQueue() {
     elements.queueAlert.classList.add("hidden");
   }
 
-  pending.forEach((task) => {
-    const queueItem = document.createElement("div");
-    queueItem.className = "queue-item";
-    queueItem.innerHTML = `
-      <div>
-        <h4>${task.title}</h4>
-        <p>Store ${getAudit().storeCode} · Submission #${task.submissions.length}</p>
-      </div>
-      <div>
-        <span class="${getStatusBadgeClass(task.status)}">${task.status}</span>
-        <button class="link" data-task-id="${task.id}">Review</button>
-      </div>
+  const queueAudits = getReviewerQueueAudits();
+  if (!queueAudits.length) {
+    const emptyState = document.createElement("p");
+    emptyState.className = "muted";
+    emptyState.textContent = "No submissions have been sent for review yet.";
+    elements.reviewerQueueList.appendChild(emptyState);
+    return;
+  }
+
+  queueAudits.forEach((entry, index) => {
+    const card = document.createElement("details");
+    card.className = "queue-audit-card";
+    card.open = index === 0;
+    card.innerHTML = `
+      <summary class="queue-audit-summary">
+        <div>
+          <h4>${entry.audit.id} · ${entry.audit.storeCode}</h4>
+          <p>${entry.audit.storeName} · ${entry.dueWindow}</p>
+        </div>
+        <div class="queue-audit-counts">
+          ${entry.tasksToConfirm} tasks to confirm out of ${entry.submittedCount} submitted
+        </div>
+      </summary>
     `;
-    queueItem.querySelector("button").addEventListener("click", () => {
-      state.selectedTaskId = task.id;
-      renderTaskDetail();
-      switchScreen("task-detail");
+
+    const taskList = document.createElement("div");
+    taskList.className = "queue-task-list";
+
+    entry.submittedTasks.forEach((task) => {
+      const taskItem = document.createElement("div");
+      taskItem.className = "queue-task";
+      const actionLabel = task.status === TaskStatus.PROOF_SUBMITTED ? "Review" : "View";
+      taskItem.innerHTML = `
+        <div>
+          <h5>${task.title}</h5>
+          <p>Submission #${task.submissions.length} · Due ${formatDate(task.dueDate)}</p>
+        </div>
+        <div class="queue-task-actions">
+          <span class="${getStatusBadgeClass(task.status)}">${task.status}</span>
+          <button class="link" data-task-id="${task.id}">${actionLabel}</button>
+        </div>
+      `;
+      taskItem.querySelector("button").addEventListener("click", () => {
+        state.selectedTaskId = task.id;
+        renderTaskDetail();
+        switchScreen("task-detail");
+      });
+      taskList.appendChild(taskItem);
     });
-    elements.reviewerQueueList.appendChild(queueItem);
+
+    card.appendChild(taskList);
+    elements.reviewerQueueList.appendChild(card);
   });
 }
 

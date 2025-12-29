@@ -408,6 +408,85 @@ button.full {
   gap: 12px;
 }
 
+.queue-audit-card {
+  border-radius: 16px;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06);
+  overflow: hidden;
+}
+
+.queue-audit-card summary {
+  list-style: none;
+  cursor: pointer;
+}
+
+.queue-audit-card summary::-webkit-details-marker {
+  display: none;
+}
+
+.queue-audit-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.queue-audit-summary h4 {
+  margin: 0 0 4px;
+}
+
+.queue-audit-summary p {
+  margin: 0;
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
+.queue-audit-counts {
+  font-weight: 600;
+  color: #1f2937;
+  background: #eff6ff;
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+}
+
+.queue-task-list {
+  display: grid;
+  gap: 10px;
+  padding: 16px 20px 20px;
+}
+
+.queue-task {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  background: #f8fafc;
+}
+
+.queue-task h5 {
+  margin: 0 0 4px;
+  font-size: 0.95rem;
+}
+
+.queue-task p {
+  margin: 0;
+  color: #6b7280;
+  font-size: 0.8rem;
+}
+
+.queue-task-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .queue-item {
   display: flex;
   justify-content: space-between;
