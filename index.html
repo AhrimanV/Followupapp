@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Audit Follow-Up Tracking App</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar">
+        <div class="brand">
+          <span class="brand-mark">AF</span>
+          <div>
+            <h1>Audit Follow-Up</h1>
+            <p>Tracking Workspace</p>
+          </div>
+        </div>
+        <nav class="nav">
+          <button class="nav-item active" data-screen="home">Home</button>
+          <button class="nav-item" data-screen="create-audit">Create Audit</button>
+          <button class="nav-item" data-screen="create-tasks">Create Tasks</button>
+          <button class="nav-item" data-screen="task-list">Task List</button>
+          <button class="nav-item" data-screen="task-detail">Task Detail</button>
+          <button class="nav-item" data-screen="reviewer-queue">Reviewer Queue</button>
+        </nav>
+        <div class="sidebar-footer">
+          <p>Store Code: <strong>ON-204</strong></p>
+          <p>Status: <span class="status-pill">Open</span></p>
+        </div>
+      </aside>
+      <main class="main">
+        <header class="topbar">
+          <div>
+            <h2 id="screen-title">Home</h2>
+            <p id="screen-subtitle">Search and start a new audit follow-up.</p>
+          </div>
+          <div class="topbar-actions">
+            <button class="secondary">Generate Report</button>
+            <button class="primary">New Audit</button>
+          </div>
+        </header>
+
+        <section class="content" id="screen-home">
+          <div class="grid two">
+            <div class="card">
+              <h3>Quick Search</h3>
+              <label class="field">
+                Store / Dealer Code
+                <input type="text" value="ON-204" />
+              </label>
+              <label class="field">
+                Audit Date
+                <input type="date" value="2025-02-14" />
+              </label>
+              <button class="primary full">Continue</button>
+            </div>
+            <div class="card summary">
+              <h3>Store Snapshot</h3>
+              <ul>
+                <li><span>Location</span><strong>Toronto Midtown</strong></li>
+                <li><span>Store Manager</span><strong>Sam Thompson</strong></li>
+                <li><span>RM</span><strong>Kelly Rodgers</strong></li>
+                <li><span>Open Tasks</span><strong>6</strong></li>
+                <li><span>Overdue</span><strong class="danger">2</strong></li>
+              </ul>
+              <div class="pill-group">
+                <span class="pill">Retail</span>
+                <span class="pill">Tier 2</span>
+                <span class="pill">Ontario</span>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <h3>Recent Activity</h3>
+            <div class="timeline">
+              <div class="timeline-item">
+                <span class="dot"></span>
+                <div>
+                  <p><strong>Proof submitted</strong> for “Emergency Exit signage”</p>
+                  <span>2 hours ago · Submission #2</span>
+                </div>
+              </div>
+              <div class="timeline-item">
+                <span class="dot warning"></span>
+                <div>
+                  <p><strong>Reminder sent</strong> to SM & RM for 3 tasks due in 7 days</p>
+                  <span>Yesterday · D-7 rule</span>
+                </div>
+              </div>
+              <div class="timeline-item">
+                <span class="dot success"></span>
+                <div>
+                  <p><strong>Audit AUD-2025-001 created</strong></p>
+                  <span>Feb 12, 2025</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="content hidden" id="screen-create-audit">
+          <div class="card">
+            <h3>Create Audit Follow-Up</h3>
+            <div class="grid two">
+              <label class="field">
+                Audit Identifier
+                <input type="text" value="AUD-2025-001" />
+              </label>
+              <label class="field">
+                Audit Date
+                <input type="date" value="2025-02-12" />
+              </label>
+              <label class="field">
+                Audit Completed By
+                <input type="text" value="Jamie Chen" />
+              </label>
+              <label class="field">
+                Store Name
+                <input type="text" value="Toronto Midtown" />
+              </label>
+            </div>
+            <label class="field">
+              AI Summary
+              <textarea rows="4">Store passed 14/20 categories. Key gaps: emergency exit signage, stock room labeling, and fire extinguisher checks.</textarea>
+            </label>
+            <label class="field">
+              Audit Photos Folder Link
+              <input type="text" value="https://sharepoint/ProofLibrary/Proof/AUD-2025-001" />
+            </label>
+            <div class="actions">
+              <button class="secondary">Save Draft</button>
+              <button class="primary">Save & Continue</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="content hidden" id="screen-create-tasks">
+          <div class="grid two">
+            <div class="card">
+              <h3>Add Failed Points</h3>
+              <label class="field">
+                Task Title
+                <input type="text" value="Emergency exit signage" />
+              </label>
+              <label class="field">
+                Due Date
+                <input type="date" value="2025-03-01" />
+              </label>
+              <button class="primary full">Add Task</button>
+            </div>
+            <div class="card">
+              <h3>Bulk Tasks</h3>
+              <div class="chip-list">
+                <span class="chip">Emergency exit signage</span>
+                <span class="chip">Stock room labeling</span>
+                <span class="chip">Fire extinguisher inspection</span>
+              </div>
+              <button class="secondary full">Bulk Add (3)</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="content hidden" id="screen-task-list">
+          <div class="card">
+            <div class="table-header">
+              <h3>Task List</h3>
+              <div class="filter-group">
+                <button class="filter active">All</button>
+                <button class="filter">Not Started</button>
+                <button class="filter">Proof Submitted</button>
+                <button class="filter">Overdue</button>
+              </div>
+            </div>
+            <div class="table">
+              <div class="table-row header">
+                <span>Task</span>
+                <span>Due</span>
+                <span>Assigned</span>
+                <span>Status</span>
+              </div>
+              <div class="table-row">
+                <span>Emergency exit signage</span>
+                <span>Mar 01</span>
+                <span>Sam Thompson</span>
+                <span class="badge warning">Overdue</span>
+              </div>
+              <div class="table-row">
+                <span>Stock room labeling</span>
+                <span>Feb 28</span>
+                <span>Sam Thompson</span>
+                <span class="badge">Not Started</span>
+              </div>
+              <div class="table-row">
+                <span>Fire extinguisher inspection</span>
+                <span>Mar 03</span>
+                <span>Sam Thompson</span>
+                <span class="badge success">Proof Submitted</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="content hidden" id="screen-task-detail">
+          <div class="grid two">
+            <div class="card">
+              <h3>Task Details</h3>
+              <ul class="details">
+                <li><span>Task</span><strong>Fire extinguisher inspection</strong></li>
+                <li><span>Due Date</span><strong>Mar 03, 2025</strong></li>
+                <li><span>Status</span><strong class="success">Proof Submitted</strong></li>
+                <li><span>Submission #</span><strong>2</strong></li>
+              </ul>
+              <label class="field">
+                Reviewer Notes
+                <textarea rows="4">Photos confirm inspection tags updated. Please add the front office unit as well.</textarea>
+              </label>
+              <div class="actions">
+                <button class="secondary">Reject</button>
+                <button class="primary">Approve</button>
+              </div>
+            </div>
+            <div class="card">
+              <h3>Proof Submission</h3>
+              <p class="muted">
+                Store managers upload proof photos here. Submitting proof automatically notifies the reviewer queue.
+              </p>
+              <div class="upload-box">
+                <div>
+                  <h4>Upload proof photos</h4>
+                  <p>Drag & drop or browse files. JPG/PNG up to 10MB each.</p>
+                </div>
+                <button class="secondary">Browse Files</button>
+              </div>
+              <div class="gallery">
+                <div class="image-card">
+                  <span>IMG_1024.jpg</span>
+                </div>
+                <div class="image-card">
+                  <span>IMG_1025.jpg</span>
+                </div>
+                <div class="image-card">
+                  <span>IMG_1026.jpg</span>
+                </div>
+              </div>
+              <button class="primary full">Submit Proof & Notify Reviewer</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="content hidden" id="screen-reviewer-queue">
+          <div class="card">
+            <h3>Reviewer Queue</h3>
+            <div class="alert info">
+              <strong>New proof submitted.</strong> The store uploaded 3 images for “Fire extinguisher inspection”.
+              <button class="link">View submission</button>
+            </div>
+            <div class="queue">
+              <div class="queue-item">
+                <div>
+                  <h4>Fire extinguisher inspection</h4>
+                  <p>Store ON-204 · Submission #2</p>
+                </div>
+                <span class="badge success">Proof Submitted</span>
+              </div>
+              <div class="queue-item">
+                <div>
+                  <h4>Emergency exit signage</h4>
+                  <p>Store ON-204 · Submission #1</p>
+                </div>
+                <span class="badge warning">Overdue</span>
+              </div>
+              <div class="queue-item">
+                <div>
+                  <h4>Stock room labeling</h4>
+                  <p>Store ON-204 · Due in 5 days</p>
+                </div>
+                <span class="badge">Not Started</span>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
