@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <div class="app">
+    <div class="app app--ros-admin">
       <aside class="sidebar">
         <div class="brand">
           <span class="brand-mark">AF</span>
@@ -282,28 +282,6 @@
           </div>
         </section>
 
-        <section class="content hidden" id="screen-store-manager">
-          <div class="card manager-header" id="manager-audit-header"></div>
-          <div class="card">
-            <div class="table-header">
-              <div>
-                <h3 id="store-manager-title">My Assigned Tasks</h3>
-                <p class="muted" id="store-manager-subtitle">
-                  Upload proof and submit tasks to the reviewer queue.
-                </p>
-              </div>
-              <label class="field compact" id="store-manager-language-field">
-                <span class="muted" id="store-manager-language-label">Language</span>
-                <select id="store-manager-locale">
-                  <option value="en">English</option>
-                  <option value="fr">Français</option>
-                </select>
-              </label>
-            </div>
-            <div class="manager-task-list" id="manager-task-list"></div>
-          </div>
-        </section>
-
         <section class="content hidden" id="screen-admin">
           <div class="grid two">
             <div class="card">
@@ -352,6 +330,43 @@
               </p>
               <div class="profile-list" id="profile-list"></div>
             </div>
+          </div>
+        </section>
+      </main>
+    </div>
+    <div class="app app--store-manager hidden">
+      <header class="store-manager-topbar">
+        <div class="store-manager-brand">
+          <span class="brand-mark">AF</span>
+          <div>
+            <p class="eyebrow">Store Manager Workspace</p>
+            <h2 id="store-manager-title">My Assigned Tasks</h2>
+            <p id="store-manager-subtitle">Upload proof and submit tasks to the reviewer queue.</p>
+          </div>
+        </div>
+        <div class="store-manager-actions">
+          <label class="field compact" id="store-manager-language-field">
+            <span class="muted" id="store-manager-language-label">Language</span>
+            <select id="store-manager-locale">
+              <option value="en">English</option>
+              <option value="fr">Français</option>
+            </select>
+          </label>
+          <button class="secondary admin-only hidden" id="exit-view-as">Exit preview</button>
+          <button class="secondary">Message Reviewer</button>
+        </div>
+      </header>
+      <main class="store-manager-main">
+        <section class="content hidden" id="screen-store-manager">
+          <div class="card manager-header" id="manager-audit-header"></div>
+          <div class="card">
+            <div class="table-header">
+              <div>
+                <h3>Task Overview</h3>
+                <p class="muted">Stay on top of due dates and proof submissions.</p>
+              </div>
+            </div>
+            <div class="manager-task-list" id="manager-task-list"></div>
           </div>
         </section>
       </main>
