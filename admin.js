@@ -248,8 +248,33 @@ function renderTaskList() {
 
 function renderTaskDetail() {
   const taskEntry = getTaskEntry(state.selectedTaskId);
-  if (!taskEntry) return;
+  if (!taskEntry) {
+    elements.taskTitle.textContent = "";
+    elements.taskCategory.textContent = "";
+    elements.taskAudit.textContent = "";
+    elements.taskDue.textContent = "";
+    elements.taskStatus.textContent = "";
+    elements.taskSubmission.textContent = "";
+    elements.taskAssignee.textContent = "";
+    elements.taskAssigneeEmail.textContent = "";
+    elements.reviewerNotes.value = "";
+    elements.managerNotes.value = "";
+    elements.proofNotes.value = "";
+    elements.proofGallery.innerHTML = "";
+    elements.proofGallery.classList.add("hidden");
+    elements.reviewerFeedback.classList.add("hidden");
+    elements.reviewerFeedback.textContent = "";
+    elements.rejectButton.disabled = true;
+    elements.approveButton.disabled = true;
+    elements.submitProof.disabled = true;
+    elements.uploadProof.disabled = true;
+    return;
+  }
   const { audit, task } = taskEntry;
+  elements.rejectButton.disabled = false;
+  elements.approveButton.disabled = false;
+  elements.submitProof.disabled = false;
+  elements.uploadProof.disabled = false;
   elements.taskTitle.textContent = task.title;
   elements.taskCategory.textContent = task.category;
   elements.taskAudit.textContent = `${audit.id} · ${audit.storeName}`;
@@ -262,6 +287,7 @@ function renderTaskDetail() {
   elements.managerNotes.value = task.managerNotes || "";
   elements.proofNotes.value = task.pendingProof?.notes || "";
   elements.proofGallery.innerHTML = "";
+  elements.proofGallery.classList.remove("hidden");
 
   const submission = task.submissions[task.submissions.length - 1];
   if (submission?.photos?.length) {
