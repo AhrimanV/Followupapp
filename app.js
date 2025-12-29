@@ -45,8 +45,6 @@ const TaskStatus = {
   REJECTED: "Rejected",
 };
 
-const ADMIN_ACCESS_CODE = "FOLLOWUP-ADMIN";
-
 const m365Directory = {
   accessMode: "imported",
   lastSync: "2025-02-19T14:20:00Z",
@@ -94,6 +92,13 @@ const m365Directory = {
       jobTitle: "Regional Operations Supervisor",
       location: "Quebec",
     },
+    {
+      id: "m365-007",
+      displayName: "Guillaume Veillette",
+      email: "guillaume.veillette@bell.ca",
+      jobTitle: "Audit Director",
+      location: "Quebec",
+    },
   ],
 };
 
@@ -104,6 +109,13 @@ const users = [
     email: "kelly.rodgers@contoso.com",
     role: "admin",
     region: "Ontario",
+  },
+  {
+    id: "usr-admin-2",
+    name: "Guillaume Veillette",
+    email: "guillaume.veillette@bell.ca",
+    role: "admin",
+    region: "Quebec",
   },
   {
     id: "usr-ros1",
@@ -324,7 +336,6 @@ const state = {
   selectedAssignee: null,
   activeUserId: "usr-admin",
   viewAsUserId: null,
-  adminUnlocked: false,
   dragTaskId: null,
 };
 
@@ -372,8 +383,6 @@ const elements = {
   adminFilterStart: document.getElementById("admin-filter-start"),
   adminFilterEnd: document.getElementById("admin-filter-end"),
   adminAuditRows: document.getElementById("admin-audit-rows"),
-  adminAccessCode: document.getElementById("admin-access-code"),
-  unlockAdmin: document.getElementById("unlock-admin"),
   profileList: document.getElementById("profile-list"),
   assigneeList: document.getElementById("assignee-list"),
 };
@@ -1225,7 +1234,7 @@ function renderAdminOverview() {
 
 function renderProfiles() {
   elements.profileList.innerHTML = "";
-  const isUnlocked = state.adminUnlocked;
+  const canEditRoles = isAdmin() && !isViewingAsUser();
 
   users.forEach((user) => {
     const card = document.createElement("div");
@@ -1241,7 +1250,7 @@ function renderProfiles() {
       <div class="profile-meta">Region: ${user.region}</div>
       <label class="field">
         Role
-        <select data-profile-role="${user.id}" ${isUnlocked ? "" : "disabled"}>
+        <select data-profile-role="${user.id}" ${canEditRoles ? "" : "disabled"}>
           <option value="admin" ${user.role === "admin" ? "selected" : ""}>Admin</option>
           <option value="auditor" ${user.role === "auditor" ? "selected" : ""}>Auditor</option>
           <option value="store-manager" ${user.role === "store-manager" ? "selected" : ""}>Store Manager</option>
@@ -1547,17 +1556,6 @@ elements.viewAsSelect.addEventListener("change", (event) => {
 
 [elements.adminFilterStart, elements.adminFilterEnd].forEach((input) => {
   input.addEventListener("change", renderAdminOverview);
-});
-
-elements.unlockAdmin.addEventListener("click", () => {
-  if (elements.adminAccessCode.value === ADMIN_ACCESS_CODE) {
-    state.adminUnlocked = true;
-    elements.adminAccessCode.value = "";
-    renderProfiles();
-  } else {
-    elements.adminAccessCode.value = "";
-    alert("Invalid admin access code.");
-  }
 });
 
 function syncSelectedTask() {
