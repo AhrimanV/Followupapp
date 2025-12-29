@@ -241,6 +241,76 @@ button.full {
   font-size: 0.95rem;
 }
 
+.field-hint {
+  margin: 4px 0 0;
+  color: #6b7280;
+  font-size: 0.78rem;
+}
+
+.field-error {
+  margin: 6px 0 0;
+  color: #b91c1c;
+  font-size: 0.8rem;
+}
+
+.autocomplete {
+  position: relative;
+}
+
+.autocomplete-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.12);
+  padding: 6px;
+  display: grid;
+  gap: 4px;
+  max-height: 220px;
+  overflow-y: auto;
+  z-index: 10;
+}
+
+.autocomplete-item {
+  border-radius: 10px;
+  padding: 8px 10px;
+  cursor: pointer;
+  display: grid;
+  gap: 2px;
+}
+
+.autocomplete-item strong {
+  font-size: 0.9rem;
+}
+
+.autocomplete-item span {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.autocomplete-item:hover,
+.autocomplete-item.active {
+  background: #eff6ff;
+}
+
+.assignee-chip {
+  margin-top: 8px;
+  background: #f1f5f9;
+  border-radius: 12px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.85rem;
+}
+
+.assignee-chip strong {
+  font-size: 0.9rem;
+}
+
 .actions {
   display: flex;
   justify-content: flex-end;
