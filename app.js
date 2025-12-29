@@ -385,6 +385,7 @@ const elements = {
   viewAsBanner: document.getElementById("view-as-banner"),
   storeManagerTitle: document.getElementById("store-manager-title"),
   storeManagerSubtitle: document.getElementById("store-manager-subtitle"),
+  storeManagerBanner: document.getElementById("store-manager-banner"),
   storeManagerLocaleSelect: document.getElementById("store-manager-locale"),
   storeManagerLanguageLabel: document.getElementById("store-manager-language-label"),
   adminFilterAuditor: document.getElementById("admin-filter-auditor"),
@@ -405,6 +406,8 @@ const storeManagerLocaleContent = {
     languageLabel: "Language",
     languageEnglish: "English",
     languageFrench: "French",
+    previewLabel: "Viewing as",
+    previewNote: "Store manager view is active.",
     currentAuditLabel: "Current audit",
     noAuditTitle: "No audit selected",
     noAuditBody: "Assign an audit to view store manager tasks.",
@@ -430,6 +433,8 @@ const storeManagerLocaleContent = {
     languageLabel: "Langue",
     languageEnglish: "Anglais",
     languageFrench: "Français",
+    previewLabel: "Aperçu en tant que",
+    previewNote: "La vue du gérant est active.",
     currentAuditLabel: "Audit en cours",
     noAuditTitle: "Aucun audit sélectionné",
     noAuditBody: "Assignez un audit pour voir les tâches du gérant.",
@@ -929,6 +934,20 @@ function renderReviewerQueue() {
 function renderStoreManagerView() {
   syncStoreManagerLocaleFromAudit();
   const strings = getStoreManagerStrings();
+  const user = getEffectiveUser();
+  if (elements.storeManagerBanner) {
+    if (isViewingAsUser() && user?.role === "store-manager") {
+      elements.storeManagerBanner.innerHTML = `
+        ${strings.previewLabel} ${user.name}
+        <span class="role-pill store-manager">${strings.managerBadge}</span>
+        <span class="muted">· ${strings.previewNote}</span>
+      `;
+      elements.storeManagerBanner.classList.remove("hidden");
+    } else {
+      elements.storeManagerBanner.textContent = "";
+      elements.storeManagerBanner.classList.add("hidden");
+    }
+  }
   if (elements.storeManagerTitle) {
     elements.storeManagerTitle.textContent = strings.screenTitle;
   }
@@ -946,7 +965,6 @@ function renderStoreManagerView() {
     elements.storeManagerLocaleSelect.value = state.storeManagerLocale;
   }
   const audit = getSelectedAudit();
-  const user = getEffectiveUser();
   const managerName = user?.role === "store-manager" ? user.name : "";
   if (!audit) {
     elements.managerAuditHeader.innerHTML = `
@@ -1476,6 +1494,7 @@ function renderRoleLayout() {
 function updateNavigationVisibility() {
   const user = getEffectiveUser();
   if (!user) return;
+  renderRoleLayout();
   const navMap = {
     home: true,
     "create-audit": user.role !== "store-manager",
