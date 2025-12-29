@@ -19,11 +19,12 @@
         <nav class="nav">
           <button class="nav-item active" data-screen="home">Home</button>
           <button class="nav-item" data-screen="create-audit">Create Audit</button>
-          <button class="nav-item" data-screen="create-tasks">Create Tasks</button>
+          <button class="nav-item" data-screen="create-tasks">Create Templates</button>
           <button class="nav-item" data-screen="task-list">Task List</button>
           <button class="nav-item" data-screen="task-detail">Task Detail</button>
           <button class="nav-item" data-screen="reviewer-queue">Reviewer Queue</button>
           <button class="nav-item" data-screen="store-manager">Store Manager</button>
+          <button class="nav-item admin-only" data-screen="admin">Admin Panel</button>
         </nav>
         <div class="sidebar-footer">
           <p>Store Code: <strong>ON-204</strong></p>
@@ -37,10 +38,15 @@
             <p id="screen-subtitle">Search and start a new audit follow-up.</p>
           </div>
           <div class="topbar-actions">
+            <div class="view-as admin-only">
+              <label for="view-as-select" class="muted">View as</label>
+              <select id="view-as-select"></select>
+            </div>
             <button class="secondary">Generate Report</button>
             <button class="primary">New Audit</button>
           </div>
         </header>
+        <div class="view-banner hidden" id="view-as-banner"></div>
 
         <section class="content" id="screen-home">
           <div class="grid two">
@@ -136,20 +142,20 @@
           </div>
           <div class="card">
             <h3>Audit Task Assignments</h3>
-            <p class="muted">Add existing tasks from the pool and manage what belongs to this audit.</p>
+            <p class="muted">Assign task templates to this audit. Drag to reorder and add manager notes.</p>
             <div class="task-assignment">
               <label class="field">
-                Add existing task
+                Add task template
                 <select id="existing-task-select"></select>
               </label>
-              <button class="secondary" id="add-existing-task">Add existing task</button>
+              <button class="secondary" id="add-existing-task">Add template</button>
             </div>
             <div class="task-summary">
               <div class="task-summary-header">
                 <strong>Audit task summary</strong>
                 <span class="muted" id="audit-task-count"></span>
               </div>
-              <ul id="audit-task-summary"></ul>
+              <div class="audit-task-list" id="audit-task-summary"></div>
             </div>
           </div>
         </section>
@@ -157,44 +163,33 @@
         <section class="content hidden" id="screen-create-tasks">
           <div class="grid two">
             <div class="card">
-              <h3>Add Failed Points</h3>
+              <h3>Create Task Template</h3>
               <label class="field">
-                Task Title
+                Template Title
                 <input id="task-title-input" type="text" value="Emergency exit signage" />
               </label>
               <label class="field">
-                Due Date
-                <input id="task-due-input" type="date" value="2025-03-01" />
+                Category
+                <input id="task-category-input" type="text" value="Loss Prevention" />
               </label>
               <label class="field">
-                Assign to (M365 directory)
-                <div class="autocomplete">
-                  <input
-                    id="assignee-input"
-                    type="text"
-                    placeholder="Search M365 directory by name or email"
-                    autocomplete="off"
-                  />
-                  <div class="autocomplete-menu hidden" id="assignee-menu"></div>
-                </div>
-                <p class="field-hint" id="assignee-hint"></p>
-                <div class="assignee-chip hidden" id="assignee-selected"></div>
-                <p class="field-error hidden" id="assignee-error"></p>
+                Template Notes
+                <textarea id="task-notes-input" rows="3">Ensure all emergency exits have clear signage and no obstructions.</textarea>
               </label>
               <button class="primary full" id="add-task-button">Add Task</button>
             </div>
             <div class="card">
-              <h3>Bulk Tasks</h3>
+              <h3>Suggested Templates</h3>
               <div class="chip-list">
-                <span class="chip">Emergency exit signage</span>
-                <span class="chip">Stock room labeling</span>
-                <span class="chip">Fire extinguisher inspection</span>
+                <span class="chip" data-category="Loss Prevention">Emergency exit signage</span>
+                <span class="chip" data-category="Store Appearance">Stock room labeling</span>
+                <span class="chip" data-category="Safety">Fire extinguisher inspection</span>
               </div>
               <button class="secondary full" id="bulk-add-button">Bulk Add (3)</button>
             </div>
             <div class="card">
-              <h3>Task Pool</h3>
-              <p class="muted">Tasks live here even if they are not assigned to an audit yet.</p>
+              <h3>Template Library</h3>
+              <p class="muted">Templates can be reused across multiple audits.</p>
               <div class="task-pool" id="task-pool-list"></div>
             </div>
           </div>
@@ -214,6 +209,7 @@
             <div class="table">
               <div class="table-row header">
                 <span>Task</span>
+                <span>Category</span>
                 <span>Due</span>
                 <span>Assigned</span>
                 <span>Status</span>
@@ -229,12 +225,18 @@
               <h3>Task Details</h3>
               <ul class="details">
                 <li><span>Task</span><strong id="detail-task-title"></strong></li>
+                <li><span>Category</span><strong id="detail-task-category"></strong></li>
+                <li><span>Audit</span><strong id="detail-task-audit"></strong></li>
                 <li><span>Due Date</span><strong id="detail-task-due"></strong></li>
                 <li><span>Assigned To</span><strong id="detail-task-assignee"></strong></li>
                 <li><span>Assignee Email</span><strong id="detail-task-email"></strong></li>
                 <li><span>Status</span><strong id="detail-task-status"></strong></li>
                 <li><span>Submission #</span><strong id="detail-task-submission"></strong></li>
               </ul>
+              <label class="field">
+                Manager Notes
+                <textarea id="detail-manager-notes" rows="3" placeholder="Add instructions for the store manager..."></textarea>
+              </label>
               <label class="field">
                 Reviewer Notes
                 <textarea id="detail-reviewer-notes" rows="4" placeholder="Add approval or rejection feedback..."></textarea>
@@ -290,9 +292,63 @@
             <div class="manager-task-list" id="manager-task-list"></div>
           </div>
         </section>
+
+        <section class="content hidden" id="screen-admin">
+          <div class="grid two">
+            <div class="card">
+              <h3>Admin Overview</h3>
+              <div class="filter-grid">
+                <label class="field">
+                  Auditor (ROS)
+                  <select id="admin-filter-auditor"></select>
+                </label>
+                <label class="field">
+                  Store
+                  <select id="admin-filter-store"></select>
+                </label>
+                <label class="field">
+                  Status
+                  <select id="admin-filter-status">
+                    <option value="all">All</option>
+                    <option value="open">Open</option>
+                    <option value="complete">Complete</option>
+                  </select>
+                </label>
+                <label class="field">
+                  From
+                  <input id="admin-filter-start" type="date" />
+                </label>
+                <label class="field">
+                  To
+                  <input id="admin-filter-end" type="date" />
+                </label>
+              </div>
+              <div class="table compact">
+                <div class="table-row header">
+                  <span>Audit</span>
+                  <span>Store</span>
+                  <span>Auditor</span>
+                  <span>Tasks</span>
+                  <span>Status</span>
+                </div>
+                <div id="admin-audit-rows"></div>
+              </div>
+            </div>
+            <div class="card">
+              <h3>Admin Access & Profiles</h3>
+              <p class="muted">Admin controls require a secure access code to modify roles.</p>
+              <div class="inline-form">
+                <input id="admin-access-code" type="password" placeholder="Enter admin access code" />
+                <button class="secondary" id="unlock-admin">Unlock</button>
+              </div>
+              <div class="profile-list" id="profile-list"></div>
+            </div>
+          </div>
+        </section>
       </main>
     </div>
 
     <script src="app.js"></script>
+    <datalist id="assignee-list"></datalist>
   </body>
 </html>
