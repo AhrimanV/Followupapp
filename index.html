@@ -133,6 +133,24 @@
               <button class="primary">Save & Continue</button>
             </div>
           </div>
+          <div class="card">
+            <h3>Audit Task Assignments</h3>
+            <p class="muted">Add existing tasks from the pool and manage what belongs to this audit.</p>
+            <div class="task-assignment">
+              <label class="field">
+                Add existing task
+                <select id="existing-task-select"></select>
+              </label>
+              <button class="secondary" id="add-existing-task">Add existing task</button>
+            </div>
+            <div class="task-summary">
+              <div class="task-summary-header">
+                <strong>Audit task summary</strong>
+                <span class="muted" id="audit-task-count"></span>
+              </div>
+              <ul id="audit-task-summary"></ul>
+            </div>
+          </div>
         </section>
 
         <section class="content hidden" id="screen-create-tasks">
@@ -141,13 +159,13 @@
               <h3>Add Failed Points</h3>
               <label class="field">
                 Task Title
-                <input type="text" value="Emergency exit signage" />
+                <input id="task-title-input" type="text" value="Emergency exit signage" />
               </label>
               <label class="field">
                 Due Date
-                <input type="date" value="2025-03-01" />
+                <input id="task-due-input" type="date" value="2025-03-01" />
               </label>
-              <button class="primary full">Add Task</button>
+              <button class="primary full" id="add-task-button">Add Task</button>
             </div>
             <div class="card">
               <h3>Bulk Tasks</h3>
@@ -156,7 +174,12 @@
                 <span class="chip">Stock room labeling</span>
                 <span class="chip">Fire extinguisher inspection</span>
               </div>
-              <button class="secondary full">Bulk Add (3)</button>
+              <button class="secondary full" id="bulk-add-button">Bulk Add (3)</button>
+            </div>
+            <div class="card">
+              <h3>Task Pool</h3>
+              <p class="muted">Tasks live here even if they are not assigned to an audit yet.</p>
+              <div class="task-pool" id="task-pool-list"></div>
             </div>
           </div>
         </section>
