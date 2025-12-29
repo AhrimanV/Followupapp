@@ -166,6 +166,21 @@
                 Due Date
                 <input id="task-due-input" type="date" value="2025-03-01" />
               </label>
+              <label class="field">
+                Assign to (M365 directory)
+                <div class="autocomplete">
+                  <input
+                    id="assignee-input"
+                    type="text"
+                    placeholder="Search M365 directory by name or email"
+                    autocomplete="off"
+                  />
+                  <div class="autocomplete-menu hidden" id="assignee-menu"></div>
+                </div>
+                <p class="field-hint" id="assignee-hint"></p>
+                <div class="assignee-chip hidden" id="assignee-selected"></div>
+                <p class="field-error hidden" id="assignee-error"></p>
+              </label>
               <button class="primary full" id="add-task-button">Add Task</button>
             </div>
             <div class="card">
@@ -215,6 +230,8 @@
               <ul class="details">
                 <li><span>Task</span><strong id="detail-task-title"></strong></li>
                 <li><span>Due Date</span><strong id="detail-task-due"></strong></li>
+                <li><span>Assigned To</span><strong id="detail-task-assignee"></strong></li>
+                <li><span>Assignee Email</span><strong id="detail-task-email"></strong></li>
                 <li><span>Status</span><strong id="detail-task-status"></strong></li>
                 <li><span>Submission #</span><strong id="detail-task-submission"></strong></li>
               </ul>

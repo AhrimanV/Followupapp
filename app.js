@@ -41,6 +41,53 @@ const TaskStatus = {
   REJECTED: "Rejected",
 };
 
+const m365Directory = {
+  accessMode: "imported",
+  lastSync: "2025-02-19T14:20:00Z",
+  securityNote: "Graph API access is restricted in this environment.",
+  contacts: [
+    {
+      id: "m365-001",
+      displayName: "Sam Thompson",
+      email: "sam.thompson@contoso.com",
+      jobTitle: "Store Manager",
+      location: "Toronto Midtown",
+    },
+    {
+      id: "m365-002",
+      displayName: "Morgan Lee",
+      email: "morgan.lee@contoso.com",
+      jobTitle: "Store Manager",
+      location: "Montreal East",
+    },
+    {
+      id: "m365-003",
+      displayName: "Kelly Rodgers",
+      email: "kelly.rodgers@contoso.com",
+      jobTitle: "Regional Manager",
+      location: "Ontario",
+    },
+    {
+      id: "m365-004",
+      displayName: "Jamie Chen",
+      email: "jamie.chen@contoso.com",
+      jobTitle: "Audit Lead",
+      location: "Audit Program",
+    },
+    {
+      id: "m365-005",
+      displayName: "Priya Nair",
+      email: "priya.nair@contoso.com",
+      jobTitle: "Compliance Analyst",
+      location: "Toronto Midtown",
+    },
+  ],
+};
+
+const m365UsersByName = new Map(m365Directory.contacts.map((contact) => [contact.displayName, contact]));
+const samUser = m365UsersByName.get("Sam Thompson");
+const morganUser = m365UsersByName.get("Morgan Lee");
+
 const store = {
   tasks: [
     {
@@ -48,6 +95,8 @@ const store = {
       title: "Emergency exit signage",
       dueDate: "2025-03-01",
       assignedTo: "Sam Thompson",
+      assignedUserId: samUser?.id ?? null,
+      assignedEmail: samUser?.email ?? null,
       status: TaskStatus.NOT_STARTED,
       submissions: [],
       pendingProof: {
@@ -61,6 +110,8 @@ const store = {
       title: "Stock room labeling",
       dueDate: "2025-02-28",
       assignedTo: "Sam Thompson",
+      assignedUserId: samUser?.id ?? null,
+      assignedEmail: samUser?.email ?? null,
       status: TaskStatus.NOT_STARTED,
       submissions: [],
       pendingProof: {
@@ -74,6 +125,8 @@ const store = {
       title: "Fire extinguisher inspection",
       dueDate: "2025-03-03",
       assignedTo: "Sam Thompson",
+      assignedUserId: samUser?.id ?? null,
+      assignedEmail: samUser?.email ?? null,
       status: TaskStatus.PROOF_SUBMITTED,
       submissions: [
         {
@@ -96,6 +149,8 @@ const store = {
       title: "Back room exit lighting",
       dueDate: "2025-03-06",
       assignedTo: "Morgan Lee",
+      assignedUserId: morganUser?.id ?? null,
+      assignedEmail: morganUser?.email ?? null,
       status: TaskStatus.PROOF_SUBMITTED,
       submissions: [
         {
@@ -118,6 +173,8 @@ const store = {
       title: "Safety poster refresh",
       dueDate: "2025-03-08",
       assignedTo: "Morgan Lee",
+      assignedUserId: morganUser?.id ?? null,
+      assignedEmail: morganUser?.email ?? null,
       status: TaskStatus.APPROVED,
       submissions: [
         {
@@ -158,6 +215,7 @@ const state = {
   selectedAuditId: "AUD-2025-001",
   selectedTaskId: "TSK-1003",
   managerName: "Sam Thompson",
+  selectedAssignee: null,
 };
 
 const elements = {
@@ -187,9 +245,16 @@ const elements = {
   auditTaskCount: document.getElementById("audit-task-count"),
   taskTitleInput: document.getElementById("task-title-input"),
   taskDueInput: document.getElementById("task-due-input"),
+  assigneeInput: document.getElementById("assignee-input"),
+  assigneeMenu: document.getElementById("assignee-menu"),
+  assigneeHint: document.getElementById("assignee-hint"),
+  assigneeSelected: document.getElementById("assignee-selected"),
+  assigneeError: document.getElementById("assignee-error"),
   addTaskButton: document.getElementById("add-task-button"),
   bulkAddButton: document.getElementById("bulk-add-button"),
   taskPoolList: document.getElementById("task-pool-list"),
+  taskAssignee: document.getElementById("detail-task-assignee"),
+  taskAssigneeEmail: document.getElementById("detail-task-email"),
 };
 
 const api = {
@@ -232,6 +297,30 @@ const api = {
     return task;
   },
 };
+
+function getM365SourceLabel() {
+  return m365Directory.accessMode === "graph" ? "Microsoft Graph API" : "Imported contact list";
+}
+
+function getM365SourceHint() {
+  const lastSync = m365Directory.lastSync
+    ? `Last sync ${new Date(m365Directory.lastSync).toLocaleString("en-US")}.`
+    : "";
+  const securityNote = m365Directory.accessMode === "graph" ? "" : m365Directory.securityNote;
+  return [getM365SourceLabel(), lastSync, securityNote].filter(Boolean).join(" ");
+}
+
+async function lookupM365Contacts(query) {
+  const normalized = query.trim().toLowerCase();
+  if (!normalized) return [];
+  const matches = m365Directory.contacts.filter((contact) => {
+    return (
+      contact.displayName.toLowerCase().includes(normalized) ||
+      contact.email.toLowerCase().includes(normalized)
+    );
+  });
+  return matches;
+}
 
 function getAudit() {
   return store.audits.find((audit) => audit.id === state.selectedAuditId);
@@ -392,6 +481,8 @@ function renderTaskDetail() {
   if (!task) {
     elements.taskTitle.textContent = "-";
     elements.taskDue.textContent = "-";
+    elements.taskAssignee.textContent = "-";
+    elements.taskAssigneeEmail.textContent = "-";
     elements.taskStatus.textContent = "-";
     elements.taskStatus.className = "";
     elements.taskSubmission.textContent = "-";
@@ -405,6 +496,8 @@ function renderTaskDetail() {
   const latestSubmission = task.submissions[task.submissions.length - 1];
   elements.taskTitle.textContent = task.title;
   elements.taskDue.textContent = formatDate(task.dueDate);
+  elements.taskAssignee.textContent = task.assignedTo || "Unassigned";
+  elements.taskAssigneeEmail.textContent = task.assignedEmail || "Not linked";
   elements.taskStatus.textContent = task.status;
   elements.taskStatus.className = task.status === TaskStatus.REJECTED ? "danger" : "";
   elements.taskSubmission.textContent = latestSubmission ? latestSubmission.id : "-";
@@ -679,7 +772,97 @@ function renderTaskPool() {
   });
 }
 
-function createTask({ title, dueDate }) {
+function renderAssigneeMenu(results) {
+  elements.assigneeMenu.innerHTML = "";
+  if (!results.length) {
+    const emptyItem = document.createElement("div");
+    emptyItem.className = "autocomplete-item";
+    emptyItem.innerHTML = "<strong>No matches found</strong><span>Try another name or email.</span>";
+    elements.assigneeMenu.appendChild(emptyItem);
+    return;
+  }
+
+  results.forEach((contact) => {
+    const item = document.createElement("div");
+    item.className = "autocomplete-item";
+    item.innerHTML = `
+      <strong>${contact.displayName}</strong>
+      <span>${contact.email} · ${contact.jobTitle}</span>
+    `;
+    item.addEventListener("click", () => {
+      setSelectedAssignee(contact);
+      hideAssigneeMenu();
+    });
+    elements.assigneeMenu.appendChild(item);
+  });
+}
+
+function showAssigneeMenu() {
+  elements.assigneeMenu.classList.remove("hidden");
+}
+
+function hideAssigneeMenu() {
+  elements.assigneeMenu.classList.add("hidden");
+}
+
+function clearAssigneeSelection() {
+  state.selectedAssignee = null;
+  elements.assigneeSelected.classList.add("hidden");
+  elements.assigneeSelected.innerHTML = "";
+}
+
+function setSelectedAssignee(contact) {
+  state.selectedAssignee = contact;
+  elements.assigneeInput.value = contact.displayName;
+  elements.assigneeSelected.innerHTML = `
+    <strong>${contact.displayName}</strong>
+    <span>${contact.email} · ${contact.jobTitle}</span>
+    <span>ID: ${contact.id}</span>
+  `;
+  elements.assigneeSelected.classList.remove("hidden");
+  elements.assigneeError.classList.add("hidden");
+}
+
+function setAssigneeError(message) {
+  if (!message) {
+    elements.assigneeError.textContent = "";
+    elements.assigneeError.classList.add("hidden");
+    return;
+  }
+  elements.assigneeError.textContent = message;
+  elements.assigneeError.classList.remove("hidden");
+}
+
+function validateAssignee() {
+  const inputValue = elements.assigneeInput.value.trim();
+  if (!inputValue) {
+    return { valid: true, assignee: null };
+  }
+  if (
+    state.selectedAssignee &&
+    (inputValue === state.selectedAssignee.displayName || inputValue === state.selectedAssignee.email)
+  ) {
+    return { valid: true, assignee: state.selectedAssignee };
+  }
+  return {
+    valid: false,
+    message: "Select a valid M365 contact from the dropdown to assign this task.",
+  };
+}
+
+async function handleAssigneeLookup() {
+  const query = elements.assigneeInput.value.trim();
+  if (!query) {
+    hideAssigneeMenu();
+    clearAssigneeSelection();
+    return;
+  }
+  const results = await lookupM365Contacts(query);
+  renderAssigneeMenu(results);
+  showAssigneeMenu();
+}
+
+function createTask({ title, dueDate, assignee }) {
   const trimmedTitle = title.trim();
   if (!trimmedTitle) return;
   const id = generateTaskId();
@@ -687,7 +870,9 @@ function createTask({ title, dueDate }) {
     id,
     title: trimmedTitle,
     dueDate,
-    assignedTo: "Unassigned",
+    assignedTo: assignee?.displayName || "Unassigned",
+    assignedUserId: assignee?.id || null,
+    assignedEmail: assignee?.email || null,
     status: TaskStatus.NOT_STARTED,
     submissions: [],
     pendingProof: {
@@ -720,6 +905,34 @@ navButtons.forEach((button) => {
   });
 });
 
+elements.assigneeHint.textContent = getM365SourceHint();
+
+elements.assigneeInput.addEventListener("input", () => {
+  const value = elements.assigneeInput.value.trim();
+  if (
+    state.selectedAssignee &&
+    value !== state.selectedAssignee.displayName &&
+    value !== state.selectedAssignee.email
+  ) {
+    clearAssigneeSelection();
+  }
+  setAssigneeError("");
+  handleAssigneeLookup();
+});
+
+elements.assigneeInput.addEventListener("focus", () => {
+  if (elements.assigneeInput.value.trim()) {
+    handleAssigneeLookup();
+  }
+});
+
+document.addEventListener("click", (event) => {
+  const isAutocomplete = event.target.closest(".autocomplete");
+  if (!isAutocomplete) {
+    hideAssigneeMenu();
+  }
+});
+
 elements.addExistingTaskButton.addEventListener("click", () => {
   const audit = getAudit();
   const taskId = elements.existingTaskSelect.value;
@@ -735,9 +948,18 @@ elements.addExistingTaskButton.addEventListener("click", () => {
 elements.addTaskButton.addEventListener("click", () => {
   const title = elements.taskTitleInput.value;
   const dueDate = elements.taskDueInput.value;
-  createTask({ title, dueDate });
+  const validation = validateAssignee();
+  if (!validation.valid) {
+    setAssigneeError(validation.message);
+    return;
+  }
+  createTask({ title, dueDate, assignee: validation.assignee });
   elements.taskTitleInput.value = "";
   elements.taskDueInput.value = "";
+  elements.assigneeInput.value = "";
+  clearAssigneeSelection();
+  setAssigneeError("");
+  hideAssigneeMenu();
   renderExistingTaskOptions();
   renderTaskPool();
 });
