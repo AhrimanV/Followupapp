@@ -112,6 +112,12 @@ body {
   color: #6b7280;
 }
 
+.muted {
+  color: #6b7280;
+  font-size: 0.9rem;
+  margin-top: 0;
+}
+
 .topbar-actions {
   display: flex;
   gap: 12px;
@@ -335,6 +341,52 @@ button.full {
   text-align: center;
   font-size: 0.8rem;
   color: #475569;
+}
+
+.upload-box {
+  border: 1px dashed #cbd5f5;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 16px 0;
+  background: #f8fafc;
+}
+
+.upload-box h4 {
+  margin: 0 0 4px;
+}
+
+.upload-box p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+.alert {
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  font-size: 0.9rem;
+}
+
+.alert.info {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.link {
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  font-weight: 600;
+  text-decoration: underline;
 }
 
 .queue {
