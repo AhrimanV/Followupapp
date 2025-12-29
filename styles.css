@@ -17,10 +17,17 @@ body {
   display: none !important;
 }
 
-.app {
+.app--ros-admin {
   display: grid;
   grid-template-columns: 260px 1fr;
   min-height: 100vh;
+}
+
+.app--store-manager {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #f8fafc;
 }
 
 .sidebar {
@@ -97,6 +104,50 @@ body {
 
 .main {
   padding: 28px 36px 40px;
+}
+
+.store-manager-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  padding: 28px 36px 24px;
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.store-manager-brand {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.store-manager-brand h2 {
+  margin: 6px 0 4px;
+  font-size: 1.6rem;
+}
+
+.store-manager-brand p {
+  margin: 0;
+  color: #6b7280;
+}
+
+.eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.72rem;
+  color: #94a3b8;
+  margin: 0;
+}
+
+.store-manager-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.store-manager-main {
+  padding: 24px 36px 40px;
 }
 
 .topbar {

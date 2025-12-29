@@ -344,6 +344,8 @@ const state = {
 };
 
 const elements = {
+  rosAdminApp: document.querySelector(".app--ros-admin"),
+  storeManagerApp: document.querySelector(".app--store-manager"),
   taskListRows: document.getElementById("task-list-rows"),
   taskTitle: document.getElementById("detail-task-title"),
   taskCategory: document.getElementById("detail-task-category"),
@@ -393,6 +395,7 @@ const elements = {
   adminAuditRows: document.getElementById("admin-audit-rows"),
   profileList: document.getElementById("profile-list"),
   assigneeList: document.getElementById("assignee-list"),
+  exitViewAsButton: document.getElementById("exit-view-as"),
 };
 
 const storeManagerLocaleContent = {
@@ -1383,6 +1386,8 @@ function renderProfiles() {
       renderProfiles();
       renderViewAsOptions();
       updateNavigationVisibility();
+      updateStoreManagerViewControls();
+      renderRoleLayout();
     });
 
     elements.profileList.appendChild(card);
@@ -1451,6 +1456,23 @@ function updateViewAsBanner() {
   }
 }
 
+function updateStoreManagerViewControls() {
+  if (!elements.exitViewAsButton) return;
+  const shouldShow = isAdmin() && isViewingAsUser();
+  elements.exitViewAsButton.classList.toggle("hidden", !shouldShow);
+}
+
+function renderRoleLayout() {
+  const user = getEffectiveUser();
+  const showStoreManager = user?.role === "store-manager";
+  if (elements.rosAdminApp) {
+    elements.rosAdminApp.classList.toggle("hidden", showStoreManager);
+  }
+  if (elements.storeManagerApp) {
+    elements.storeManagerApp.classList.toggle("hidden", !showStoreManager);
+  }
+}
+
 function updateNavigationVisibility() {
   const user = getEffectiveUser();
   if (!user) return;
@@ -1481,6 +1503,22 @@ function updateNavigationVisibility() {
     const fallbackScreen = user.role === "store-manager" ? "store-manager" : "home";
     switchScreen(fallbackScreen);
   }
+}
+
+function applyViewAsChange(userId) {
+  state.viewAsUserId = userId || null;
+  ensureSelectedAudit();
+  updateNavigationVisibility();
+  updateViewAsBanner();
+  updateStoreManagerViewControls();
+  renderRoleLayout();
+  renderTaskList();
+  renderTaskDetail();
+  renderReviewerQueue();
+  renderStoreManagerView();
+  renderAuditTaskSummary();
+  renderExistingTaskOptions();
+  renderAdminOverview();
 }
 
 function ensureSelectedAudit() {
@@ -1658,18 +1696,17 @@ elements.managerNotes.addEventListener("input", (event) => {
 
 elements.viewAsSelect.addEventListener("change", (event) => {
   if (!isAdmin()) return;
-  state.viewAsUserId = event.target.value || null;
-  ensureSelectedAudit();
-  updateNavigationVisibility();
-  updateViewAsBanner();
-  renderTaskList();
-  renderTaskDetail();
-  renderReviewerQueue();
-  renderStoreManagerView();
-  renderAuditTaskSummary();
-  renderExistingTaskOptions();
-  renderAdminOverview();
+  applyViewAsChange(event.target.value);
 });
+
+if (elements.exitViewAsButton) {
+  elements.exitViewAsButton.addEventListener("click", () => {
+    applyViewAsChange(null);
+    if (elements.viewAsSelect) {
+      elements.viewAsSelect.value = "";
+    }
+  });
+}
 
 if (elements.storeManagerLocaleSelect) {
   elements.storeManagerLocaleSelect.addEventListener("change", (event) => {
@@ -1702,6 +1739,8 @@ function init() {
   renderViewAsOptions();
   updateNavigationVisibility();
   updateViewAsBanner();
+  updateStoreManagerViewControls();
+  renderRoleLayout();
   renderAdminFilters();
   ensureSelectedAudit();
   syncSelectedTask();
