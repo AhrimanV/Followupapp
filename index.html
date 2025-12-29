@@ -179,24 +179,7 @@
                 <span>Assigned</span>
                 <span>Status</span>
               </div>
-              <div class="table-row">
-                <span>Emergency exit signage</span>
-                <span>Mar 01</span>
-                <span>Sam Thompson</span>
-                <span class="badge warning">Overdue</span>
-              </div>
-              <div class="table-row">
-                <span>Stock room labeling</span>
-                <span>Feb 28</span>
-                <span>Sam Thompson</span>
-                <span class="badge">Not Started</span>
-              </div>
-              <div class="table-row">
-                <span>Fire extinguisher inspection</span>
-                <span>Mar 03</span>
-                <span>Sam Thompson</span>
-                <span class="badge success">Proof Submitted</span>
-              </div>
+              <div id="task-list-rows"></div>
             </div>
           </div>
         </section>
@@ -206,44 +189,41 @@
             <div class="card">
               <h3>Task Details</h3>
               <ul class="details">
-                <li><span>Task</span><strong>Fire extinguisher inspection</strong></li>
-                <li><span>Due Date</span><strong>Mar 03, 2025</strong></li>
-                <li><span>Status</span><strong class="success">Proof Submitted</strong></li>
-                <li><span>Submission #</span><strong>2</strong></li>
+                <li><span>Task</span><strong id="detail-task-title"></strong></li>
+                <li><span>Due Date</span><strong id="detail-task-due"></strong></li>
+                <li><span>Status</span><strong id="detail-task-status"></strong></li>
+                <li><span>Submission #</span><strong id="detail-task-submission"></strong></li>
               </ul>
               <label class="field">
                 Reviewer Notes
-                <textarea rows="4">Photos confirm inspection tags updated. Please add the front office unit as well.</textarea>
+                <textarea id="detail-reviewer-notes" rows="4" placeholder="Add approval or rejection feedback..."></textarea>
               </label>
               <div class="actions">
-                <button class="secondary">Reject</button>
-                <button class="primary">Approve</button>
+                <button class="secondary" id="reject-task">Reject</button>
+                <button class="primary" id="approve-task">Approve</button>
               </div>
             </div>
             <div class="card">
               <h3>Proof Submission</h3>
               <p class="muted">
-                Store managers upload proof photos here. Submitting proof automatically notifies the reviewer queue.
+                Store managers upload proof photos here. Uploads stay in draft until you submit proof to the
+                reviewer queue.
               </p>
+              <label class="field">
+                Store Manager Notes
+                <textarea id="proof-notes" rows="3" placeholder="Add notes for the reviewer..."></textarea>
+              </label>
               <div class="upload-box">
                 <div>
                   <h4>Upload proof photos</h4>
                   <p>Drag & drop or browse files. JPG/PNG up to 10MB each.</p>
                 </div>
-                <button class="secondary">Browse Files</button>
+                <input id="proof-files" type="file" multiple />
               </div>
-              <div class="gallery">
-                <div class="image-card">
-                  <span>IMG_1024.jpg</span>
-                </div>
-                <div class="image-card">
-                  <span>IMG_1025.jpg</span>
-                </div>
-                <div class="image-card">
-                  <span>IMG_1026.jpg</span>
-                </div>
-              </div>
-              <button class="primary full">Submit Proof & Notify Reviewer</button>
+              <button class="secondary full" id="upload-proof">Upload Proof</button>
+              <div class="gallery" id="proof-gallery"></div>
+              <div class="callout" id="reviewer-feedback"></div>
+              <button class="primary full" id="submit-proof">Submit Proof & Notify Reviewer</button>
             </div>
           </div>
         </section>
@@ -251,33 +231,11 @@
         <section class="content hidden" id="screen-reviewer-queue">
           <div class="card">
             <h3>Reviewer Queue</h3>
-            <div class="alert info">
-              <strong>New proof submitted.</strong> The store uploaded 3 images for “Fire extinguisher inspection”.
-              <button class="link">View submission</button>
+            <div class="alert info" id="queue-alert">
+              <strong>New proof submitted.</strong> <span id="queue-alert-text"></span>
+              <button class="link" id="queue-alert-action">View submission</button>
             </div>
-            <div class="queue">
-              <div class="queue-item">
-                <div>
-                  <h4>Fire extinguisher inspection</h4>
-                  <p>Store ON-204 · Submission #2</p>
-                </div>
-                <span class="badge success">Proof Submitted</span>
-              </div>
-              <div class="queue-item">
-                <div>
-                  <h4>Emergency exit signage</h4>
-                  <p>Store ON-204 · Submission #1</p>
-                </div>
-                <span class="badge warning">Overdue</span>
-              </div>
-              <div class="queue-item">
-                <div>
-                  <h4>Stock room labeling</h4>
-                  <p>Store ON-204 · Due in 5 days</p>
-                </div>
-                <span class="badge">Not Started</span>
-              </div>
-            </div>
+            <div class="queue" id="reviewer-queue-list"></div>
           </div>
         </section>
       </main>
