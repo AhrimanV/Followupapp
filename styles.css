@@ -125,6 +125,7 @@ body {
 .topbar-actions {
   display: flex;
   gap: 12px;
+  align-items: center;
 }
 
 button {
@@ -147,6 +148,32 @@ button.secondary {
 
 button.full {
   width: 100%;
+}
+
+.view-as {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+.view-as select {
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  padding: 8px 10px;
+  font-size: 0.9rem;
+  background: #fff;
+}
+
+.view-banner {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-radius: 12px;
+  padding: 10px 14px;
+  margin: -8px 0 18px;
+  font-size: 0.9rem;
+  font-weight: 600;
 }
 
 .grid {
@@ -338,7 +365,7 @@ button.full {
 
 .table-row {
   display: grid;
-  grid-template-columns: 2fr 1fr 1.2fr 1fr;
+  grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
   gap: 12px;
   padding: 12px 0;
   border-bottom: 1px solid #e5e7eb;
@@ -619,7 +646,6 @@ button.full {
   gap: 10px;
 }
 
-.task-summary li,
 .task-pool-item {
   display: flex;
   justify-content: space-between;
@@ -629,6 +655,64 @@ button.full {
   border-radius: 12px;
   border: 1px solid #e5e7eb;
   background: #f8fafc;
+}
+
+.audit-task-list {
+  display: grid;
+  gap: 12px;
+}
+
+.audit-task-card {
+  border-radius: 14px;
+  border: 1px solid #e5e7eb;
+  padding: 14px;
+  background: #f8fafc;
+  display: grid;
+  gap: 12px;
+}
+
+.audit-task-card.dragging {
+  opacity: 0.6;
+}
+
+.audit-task-card.drag-over {
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.3);
+}
+
+.audit-task-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
+.audit-task-header .task-meta {
+  gap: 2px;
+}
+
+.drag-handle {
+  background: #e2e8f0;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 0.75rem;
+  color: #475569;
+  cursor: grab;
+}
+
+.audit-task-fields {
+  display: grid;
+  gap: 12px;
+}
+
+.audit-task-fields .field {
+  margin-bottom: 0;
+}
+
+.audit-task-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
 }
 
 .task-meta {
@@ -726,5 +810,78 @@ button.full {
   margin-bottom: 12px;
   background: #fef2f2;
   color: #991b1b;
+  font-size: 0.85rem;
+}
+
+.filter-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.inline-form {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.inline-form input {
+  flex: 1;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  padding: 10px 12px;
+}
+
+.profile-list {
+  display: grid;
+  gap: 12px;
+}
+
+.profile-card {
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  padding: 12px;
+  background: #f8fafc;
+  display: grid;
+  gap: 8px;
+}
+
+.profile-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.profile-meta {
+  color: #6b7280;
+  font-size: 0.85rem;
+}
+
+.role-pill {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  background: #e2e8f0;
+  color: #1f2937;
+}
+
+.role-pill.admin {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.role-pill.auditor {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.role-pill.store-manager {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.table.compact .table-row {
   font-size: 0.85rem;
 }
