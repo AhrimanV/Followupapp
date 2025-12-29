@@ -10,9 +10,11 @@ import {
   formatDateRange,
   generateAuditTaskId,
   generateTemplateId,
+  generateAuditEmailTemplate,
   getAccessibleAudits,
   getAuditCompletionStatus,
   getEffectiveUser,
+  getAuditLanguage,
   getLatestPendingSubmission,
   getRoleBadgeClass,
   getRoleLabel,
@@ -25,6 +27,7 @@ import {
   getVisibleTasksForAudit,
   isAdmin,
   isViewingAsUser,
+  logAuditEmailSend,
   renderStoreManagerView,
   syncStoreManagerLocaleFromAudit,
 } from "./shared.js";
@@ -126,6 +129,19 @@ const elements = {
   profileList: document.getElementById("profile-list"),
   assigneeList: document.getElementById("assignee-list"),
   exitViewAsButton: document.getElementById("exit-view-as"),
+  saveContinueButton: document.getElementById("save-continue-button"),
+  auditIdInput: document.getElementById("audit-id-input"),
+  auditDateInput: document.getElementById("audit-date-input"),
+  auditOwnerInput: document.getElementById("audit-owner-input"),
+  auditStoreInput: document.getElementById("audit-store-input"),
+  auditAssigneeInput: document.getElementById("audit-assignee-input"),
+  auditDeadlineInput: document.getElementById("audit-deadline-input"),
+  auditLanguageSelect: document.getElementById("audit-language-select"),
+  auditAppLinkInput: document.getElementById("audit-app-link-input"),
+  auditSummaryInput: document.getElementById("audit-summary-input"),
+  auditPhotosInput: document.getElementById("audit-photos-input"),
+  auditEmailPreview: document.getElementById("audit-email-preview"),
+  auditEmailSendLog: document.getElementById("audit-email-send-log"),
 };
 
 const storeManagerElements = {
@@ -214,6 +230,100 @@ function renderAssigneeDatalist() {
     option.textContent = `${contact.displayName} (${contact.email})`;
     elements.assigneeList.appendChild(option);
   });
+}
+
+function buildAuditDraftFromForm(audit) {
+  const baseAudit = audit || {};
+  const ownerLookupValue = elements.auditOwnerInput?.value.trim();
+  const ownerMatch = users.find(
+    (user) =>
+      user.name.toLowerCase() === ownerLookupValue?.toLowerCase() ||
+      user.email.toLowerCase() === ownerLookupValue?.toLowerCase(),
+  );
+  return {
+    ...baseAudit,
+    id: elements.auditIdInput?.value.trim() || baseAudit.id,
+    createdAt: elements.auditDateInput?.value || baseAudit.createdAt,
+    storeName: elements.auditStoreInput?.value.trim() || baseAudit.storeName,
+    ownerId: ownerMatch?.id || baseAudit.ownerId,
+    summary: elements.auditSummaryInput?.value.trim() || "",
+  };
+}
+
+function getAssigneeFromInput() {
+  const value = elements.auditAssigneeInput?.value.trim();
+  if (!value) return null;
+  const match = m365Directory.contacts.find(
+    (contact) =>
+      contact.displayName.toLowerCase() === value.toLowerCase() ||
+      contact.email.toLowerCase() === value.toLowerCase(),
+  );
+  return {
+    name: match?.displayName || value,
+    email: match?.email || "",
+  };
+}
+
+function buildDefaultAuditLink(auditId) {
+  if (elements.auditAppLinkInput?.value.trim()) {
+    return elements.auditAppLinkInput.value.trim();
+  }
+  const baseUrl = window.location?.origin || "https://followup.contoso.com";
+  return `${baseUrl}/app/audits/${auditId}`;
+}
+
+function renderAuditEmailPreview({ audit, assignee, language, deadline, appLink }) {
+  if (!elements.auditEmailPreview) return;
+  const template = generateAuditEmailTemplate({ audit, assignee, language, deadline, appLink });
+  elements.auditEmailPreview.textContent = `Subject: ${template.subject}\n\n${template.body}`;
+}
+
+function renderAuditEmailSendLog(auditId) {
+  if (!elements.auditEmailSendLog) return;
+  const sends = store.auditEmailSends.filter((entry) => entry.auditId === auditId);
+  if (!sends.length) {
+    elements.auditEmailSendLog.textContent = "No audit emails sent yet.";
+    return;
+  }
+  elements.auditEmailSendLog.innerHTML = "";
+  sends.slice(0, 3).forEach((entry) => {
+    const item = document.createElement("div");
+    item.className = "audit-email-log-item";
+    const sentAt = new Date(entry.sentAt).toLocaleString("en-US");
+    item.innerHTML = `
+      <strong>${sentAt}</strong>
+      <div>${entry.to || "Unknown recipient"} · ${entry.language?.toUpperCase()}</div>
+      <div class="muted">${entry.subject}</div>
+    `;
+    elements.auditEmailSendLog.appendChild(item);
+  });
+}
+
+function populateCreateAuditForm(audit) {
+  if (!audit) return;
+  if (elements.auditIdInput) elements.auditIdInput.value = audit.id;
+  if (elements.auditDateInput) elements.auditDateInput.value = audit.createdAt || "";
+  if (elements.auditOwnerInput) {
+    const owner = getUserById(audit.ownerId);
+    elements.auditOwnerInput.value = owner?.name || "";
+  }
+  if (elements.auditStoreInput) elements.auditStoreInput.value = audit.storeName || "";
+  if (elements.auditAssigneeInput) {
+    const primaryAssignee = audit.tasks.find((task) => task.assignedTo)?.assignedTo;
+    elements.auditAssigneeInput.value = primaryAssignee || "";
+  }
+  if (elements.auditDeadlineInput) {
+    elements.auditDeadlineInput.value = audit.deadline || audit.tasks[0]?.dueDate || "";
+  }
+  if (elements.auditLanguageSelect) {
+    elements.auditLanguageSelect.value = getAuditLanguage(audit);
+  }
+  if (elements.auditSummaryInput) {
+    elements.auditSummaryInput.value = audit.summary || elements.auditSummaryInput.value;
+  }
+  if (elements.auditAppLinkInput && !elements.auditAppLinkInput.value) {
+    elements.auditAppLinkInput.value = buildDefaultAuditLink(audit.id);
+  }
 }
 
 function renderTaskList() {
@@ -858,6 +968,42 @@ function assignTemplateToAudit(templateId, audit) {
   audit.tasks.push(newTask);
 }
 
+function handleAuditEmailSend() {
+  const audit = getSelectedAudit();
+  if (!audit) return;
+  const language = elements.auditLanguageSelect?.value || getAuditLanguage(audit);
+  audit.language = language;
+  const deadline = elements.auditDeadlineInput?.value || "";
+  audit.deadline = deadline;
+  if (elements.auditSummaryInput) {
+    audit.summary = elements.auditSummaryInput.value.trim();
+  }
+  const draftAudit = buildAuditDraftFromForm(audit);
+  const assignee = getAssigneeFromInput();
+  const appLink = buildDefaultAuditLink(draftAudit.id || audit.id);
+  if (elements.auditAppLinkInput) {
+    elements.auditAppLinkInput.value = appLink;
+  }
+  const template = generateAuditEmailTemplate({
+    audit: draftAudit,
+    assignee,
+    language,
+    deadline,
+    appLink,
+  });
+  renderAuditEmailPreview({ audit: draftAudit, assignee, language, deadline, appLink });
+  logAuditEmailSend({
+    auditId: draftAudit.id || audit.id,
+    to: assignee?.email || assignee?.name || "Unassigned",
+    language,
+    deadline,
+    appLink,
+    subject: template.subject,
+    body: template.body,
+  });
+  renderAuditEmailSendLog(draftAudit.id || audit.id);
+}
+
 function switchScreen(target) {
   navButtons.forEach((item) => item.classList.toggle("active", item.dataset.screen === target));
   screens.forEach((screen) => {
@@ -913,6 +1059,12 @@ elements.addTaskButton.addEventListener("click", () => {
   renderExistingTaskOptions();
   renderTaskPool();
 });
+
+if (elements.saveContinueButton) {
+  elements.saveContinueButton.addEventListener("click", () => {
+    handleAuditEmailSend();
+  });
+}
 
 elements.bulkAddButton.addEventListener("click", () => {
   const chips = document.querySelectorAll("#screen-create-tasks .chip");
@@ -1005,6 +1157,25 @@ if (elements.storeManagerLocaleSelect) {
   });
 }
 
+if (elements.auditLanguageSelect) {
+  elements.auditLanguageSelect.addEventListener("change", (event) => {
+    const audit = getSelectedAudit();
+    if (!audit) return;
+    audit.language = event.target.value;
+    const draftAudit = buildAuditDraftFromForm(audit);
+    const assignee = getAssigneeFromInput();
+    const deadline = elements.auditDeadlineInput?.value || audit.deadline || "";
+    const appLink = buildDefaultAuditLink(draftAudit.id || audit.id);
+    renderAuditEmailPreview({
+      audit: draftAudit,
+      assignee,
+      language: audit.language,
+      deadline,
+      appLink,
+    });
+  });
+}
+
 [elements.adminFilterAuditor, elements.adminFilterStore, elements.adminFilterStatus].forEach((filter) => {
   filter.addEventListener("change", renderAdminOverview);
 });
@@ -1033,6 +1204,18 @@ function init() {
   renderAdminFilters();
   ensureSelectedAudit();
   syncSelectedTask();
+  const selectedAudit = getSelectedAudit();
+  if (selectedAudit) {
+    populateCreateAuditForm(selectedAudit);
+    renderAuditEmailPreview({
+      audit: buildAuditDraftFromForm(selectedAudit),
+      assignee: getAssigneeFromInput(),
+      language: elements.auditLanguageSelect?.value || getAuditLanguage(selectedAudit),
+      deadline: elements.auditDeadlineInput?.value || selectedAudit.deadline || "",
+      appLink: buildDefaultAuditLink(selectedAudit.id),
+    });
+    renderAuditEmailSendLog(selectedAudit.id);
+  }
   renderTaskList();
   renderTaskDetail();
   renderReviewerQueue();

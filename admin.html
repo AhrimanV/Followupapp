@@ -112,32 +112,64 @@
             <div class="grid two">
               <label class="field">
                 Audit Identifier
-                <input type="text" value="AUD-2025-001" />
+                <input id="audit-id-input" type="text" value="AUD-2025-001" />
               </label>
               <label class="field">
                 Audit Date
-                <input type="date" value="2025-02-12" />
+                <input id="audit-date-input" type="date" value="2025-02-12" />
               </label>
               <label class="field">
                 Audit Completed By
-                <input type="text" value="Jamie Chen" />
+                <input id="audit-owner-input" type="text" value="Jamie Chen" />
               </label>
               <label class="field">
                 Store Name
-                <input type="text" value="Toronto Midtown" />
+                <input id="audit-store-input" type="text" value="Toronto Midtown" />
+              </label>
+              <label class="field">
+                Assignee
+                <input id="audit-assignee-input" type="text" list="assignee-list" value="Sam Thompson" />
+              </label>
+              <label class="field">
+                Follow-up Due Date
+                <input id="audit-deadline-input" type="date" value="2025-03-08" />
+              </label>
+              <label class="field">
+                Language
+                <select id="audit-language-select">
+                  <option value="en">English</option>
+                  <option value="fr">French</option>
+                </select>
+              </label>
+              <label class="field">
+                Audit App Link
+                <input
+                  id="audit-app-link-input"
+                  type="text"
+                  value="https://followup.contoso.com/app/audits/AUD-2025-001"
+                />
               </label>
             </div>
             <label class="field">
               AI Summary
-              <textarea rows="4">Store passed 14/20 categories. Key gaps: emergency exit signage, stock room labeling, and fire extinguisher checks.</textarea>
+              <textarea id="audit-summary-input" rows="4">Store passed 14/20 categories. Key gaps: emergency exit signage, stock room labeling, and fire extinguisher checks.</textarea>
             </label>
             <label class="field">
               Audit Photos Folder Link
-              <input type="text" value="https://sharepoint/ProofLibrary/Proof/AUD-2025-001" />
+              <input id="audit-photos-input" type="text" value="https://sharepoint/ProofLibrary/Proof/AUD-2025-001" />
             </label>
             <div class="actions">
               <button class="secondary">Save Draft</button>
-              <button class="primary">Save & Continue</button>
+              <button class="primary" id="save-continue-button">Save & Continue</button>
+            </div>
+          </div>
+          <div class="card">
+            <h3>Audit Email Preview</h3>
+            <p class="muted">Generated when you save the audit follow-up.</p>
+            <pre id="audit-email-preview" class="preview-card">Preview will appear here.</pre>
+            <div class="section">
+              <h4>Send activity</h4>
+              <div id="audit-email-send-log" class="stack muted">No audit emails sent yet.</div>
             </div>
           </div>
           <div class="card">

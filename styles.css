@@ -258,6 +258,26 @@ button.full {
   box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
 }
 
+.preview-card {
+  background: #f6f7fb;
+  border: 1px solid #e1e6f0;
+  border-radius: 12px;
+  color: #1d2330;
+  line-height: 1.5;
+  margin: 12px 0 20px;
+  padding: 16px;
+  white-space: pre-wrap;
+}
+
+.audit-email-log-item {
+  border-bottom: 1px solid #e6e9f2;
+  padding: 12px 0;
+}
+
+.audit-email-log-item:last-child {
+  border-bottom: none;
+}
+
 .card.summary ul {
   list-style: none;
   padding: 0;
