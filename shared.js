@@ -121,30 +121,35 @@ export const store = {
       title: "Emergency exit signage",
       category: "Loss Prevention",
       notes: "Ensure all emergency exits have clear signage and no obstructions.",
+      requiresProof: true,
     },
     {
       id: "TPL-1002",
       title: "Stock room labeling",
       category: "Store Appearance",
       notes: "Label aisles, bays, and supply zones with updated signage.",
+      requiresProof: true,
     },
     {
       id: "TPL-1003",
       title: "Fire extinguisher inspection",
       category: "Safety",
       notes: "Verify inspection tags, pressure gauges, and access paths.",
+      requiresProof: true,
     },
     {
       id: "TPL-1004",
       title: "Back room exit lighting",
       category: "Safety",
       notes: "Check emergency lighting fixtures and replace bulbs if needed.",
+      requiresProof: true,
     },
     {
       id: "TPL-1005",
       title: "Safety poster refresh",
       category: "Store Appearance",
       notes: "Update compliance posters and ensure they are visible to staff.",
+      requiresProof: true,
     },
   ],
   audits: [
@@ -167,6 +172,7 @@ export const store = {
           assignedUserId: "usr-sm1",
           assignedEmail: "sam.thompson@contoso.com",
           managerNotes: "Keep exit door area fully clear and mark floor decals.",
+          requiresProof: true,
           status: TaskStatus.NOT_STARTED,
           submissions: [],
           pendingProof: {
@@ -185,6 +191,7 @@ export const store = {
           assignedUserId: "usr-sm1",
           assignedEmail: "sam.thompson@contoso.com",
           managerNotes: "Include new SKU labels for seasonal racks.",
+          requiresProof: true,
           status: TaskStatus.NOT_STARTED,
           submissions: [],
           pendingProof: {
@@ -203,6 +210,7 @@ export const store = {
           assignedUserId: "usr-sm1",
           assignedEmail: "sam.thompson@contoso.com",
           managerNotes: "Document inspection stickers for all units.",
+          requiresProof: true,
           status: TaskStatus.PROOF_SUBMITTED,
           submissions: [
             {
@@ -241,6 +249,7 @@ export const store = {
           assignedUserId: "usr-sm2",
           assignedEmail: "morgan.lee@contoso.com",
           managerNotes: "Confirm fixtures near loading bay.",
+          requiresProof: true,
           status: TaskStatus.PROOF_SUBMITTED,
           submissions: [
             {
@@ -268,6 +277,7 @@ export const store = {
           assignedUserId: "usr-sm2",
           assignedEmail: "morgan.lee@contoso.com",
           managerNotes: "Update posters in break room and stock room.",
+          requiresProof: true,
           status: TaskStatus.APPROVED,
           submissions: [
             {
@@ -329,6 +339,7 @@ const storeManagerLocaleContent = {
     actionSubmit: "Submit Proof",
     submissionCount: (count) => `Submission #${count}`,
     noTasksAssigned: "No tasks assigned to you for this audit.",
+    proofOptionalNote: "Proof upload not required for this task.",
   },
   fr: {
     screenTitle: "Mes tâches assignées",
@@ -357,6 +368,7 @@ const storeManagerLocaleContent = {
     actionSubmit: "Soumettre la preuve",
     submissionCount: (count) => `Soumission nº${count}`,
     noTasksAssigned: "Aucune tâche ne vous est assignée pour cet audit.",
+    proofOptionalNote: "Le téléversement de preuves n'est pas requis pour cette tâche.",
   },
 };
 
@@ -725,6 +737,7 @@ export function renderStoreManagerView(elements, { onTaskUpdated } = {}) {
     const taskCard = document.createElement("div");
     taskCard.className = "manager-task-card";
     const overdue = isTaskOverdue(task);
+    const requiresProof = task.requiresProof !== false;
     const actionLabel =
       task.status === TaskStatus.APPROVED
         ? strings.actionCompleted
@@ -757,11 +770,17 @@ export function renderStoreManagerView(elements, { onTaskUpdated } = {}) {
           : ""
       }
       <div class="manager-task-body">
+        ${
+          requiresProof
+            ? `
         <label class="field">
           ${strings.proofUploadLabel}
           <input type="file" multiple data-task-id="${task.id}" />
           <p class="field-error hidden" data-task-file-error="${task.id}">${strings.proofUploadRequired}</p>
         </label>
+        `
+            : `<p class="muted">${strings.proofOptionalNote}</p>`
+        }
         <label class="field">
           ${strings.notesToReviewerLabel}
           <textarea rows="3" data-task-notes="${task.id}" placeholder="${strings.notesPlaceholder}">${
@@ -784,8 +803,8 @@ export function renderStoreManagerView(elements, { onTaskUpdated } = {}) {
 
     actionButton.addEventListener("click", async () => {
       const notes = notesField.value.trim();
-      const photos = Array.from(fileInput.files || []).map((file) => file.name);
-      if (!fileInput.files || fileInput.files.length === 0) {
+      const photos = Array.from(fileInput?.files || []).map((file) => file.name);
+      if (requiresProof && (!fileInput?.files || fileInput.files.length === 0)) {
         if (fileError) {
           fileError.classList.remove("hidden");
         }
@@ -802,11 +821,13 @@ export function renderStoreManagerView(elements, { onTaskUpdated } = {}) {
       renderStoreManagerView(elements, { onTaskUpdated });
     });
 
-    fileInput.addEventListener("change", () => {
-      if (fileError && fileInput.files && fileInput.files.length > 0) {
-        fileError.classList.add("hidden");
-      }
-    });
+    if (fileInput) {
+      fileInput.addEventListener("change", () => {
+        if (fileError && fileInput.files && fileInput.files.length > 0) {
+          fileError.classList.add("hidden");
+        }
+      });
+    }
 
     elements.managerTaskList.appendChild(taskCard);
   });
