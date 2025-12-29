@@ -1261,22 +1261,47 @@ function renderProfiles() {
 }
 
 function renderViewAsOptions() {
-  if (!isAdmin()) return;
   elements.viewAsSelect.innerHTML = "";
+  if (!isAdmin()) {
+    return;
+  }
 
   const adminOption = document.createElement("option");
   adminOption.value = "";
   adminOption.textContent = "Admin (full access)";
   elements.viewAsSelect.appendChild(adminOption);
 
+  const roleGroups = {
+    auditor: {
+      label: "ROS Auditors",
+      users: [],
+    },
+    "store-manager": {
+      label: "Store Managers",
+      users: [],
+    },
+  };
+
   users
     .filter((user) => user.role !== "admin")
     .forEach((user) => {
+      if (roleGroups[user.role]) {
+        roleGroups[user.role].users.push(user);
+      }
+    });
+
+  Object.values(roleGroups).forEach((group) => {
+    if (!group.users.length) return;
+    const optgroup = document.createElement("optgroup");
+    optgroup.label = group.label;
+    group.users.forEach((user) => {
       const option = document.createElement("option");
       option.value = user.id;
       option.textContent = `${user.name} · ${getRoleLabel(user.role)} · ${user.region}`;
-      elements.viewAsSelect.appendChild(option);
+      optgroup.appendChild(option);
     });
+    elements.viewAsSelect.appendChild(optgroup);
+  });
 
   elements.viewAsSelect.value = state.viewAsUserId || "";
 }
@@ -1284,7 +1309,12 @@ function renderViewAsOptions() {
 function updateViewAsBanner() {
   if (isViewingAsUser()) {
     const user = getEffectiveUser();
-    elements.viewAsBanner.textContent = `Viewing as ${user.name} (${getRoleLabel(user.role)})`;
+    const roleLabel = user.role === "auditor" ? "ROS Auditor" : getRoleLabel(user.role);
+    elements.viewAsBanner.innerHTML = `
+      Viewing as ${user.name}
+      <span class="role-pill ${user.role}">${roleLabel}</span>
+      <span class="muted">· Navigation and tasks reflect this perspective.</span>
+    `;
     elements.viewAsBanner.classList.remove("hidden");
   } else {
     elements.viewAsBanner.textContent = "";
@@ -1315,6 +1345,13 @@ function updateNavigationVisibility() {
   document.querySelectorAll(".admin-only").forEach((node) => {
     node.classList.toggle("hidden", !isAdmin() || isViewingAsUser());
   });
+
+  const activeButton = navButtons.find((button) => button.classList.contains("active"));
+  const activeScreen = activeButton?.dataset.screen;
+  if (!activeScreen || !navMap[activeScreen]) {
+    const fallbackScreen = user.role === "store-manager" ? "store-manager" : "home";
+    switchScreen(fallbackScreen);
+  }
 }
 
 function ensureSelectedAudit() {
