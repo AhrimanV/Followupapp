@@ -286,8 +286,19 @@
           <div class="card manager-header" id="manager-audit-header"></div>
           <div class="card">
             <div class="table-header">
-              <h3>My Assigned Tasks</h3>
-              <p class="muted">Upload proof and submit tasks to the reviewer queue.</p>
+              <div>
+                <h3 id="store-manager-title">My Assigned Tasks</h3>
+                <p class="muted" id="store-manager-subtitle">
+                  Upload proof and submit tasks to the reviewer queue.
+                </p>
+              </div>
+              <label class="field compact" id="store-manager-language-field">
+                <span class="muted" id="store-manager-language-label">Language</span>
+                <select id="store-manager-locale">
+                  <option value="en">English</option>
+                  <option value="fr">Français</option>
+                </select>
+              </label>
             </div>
             <div class="manager-task-list" id="manager-task-list"></div>
           </div>

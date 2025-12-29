@@ -196,6 +196,7 @@ const store = {
       storeName: "Toronto Midtown",
       createdAt: "2025-02-12",
       ownerId: "usr-ros1",
+      language: "en",
       categoryOptions: ["Store Appearance", "Loss Prevention", "QPU", "Safety"],
       tasks: [
         {
@@ -269,6 +270,7 @@ const store = {
       storeName: "Montreal East",
       createdAt: "2025-02-15",
       ownerId: "usr-ros2",
+      language: "fr",
       categoryOptions: ["Store Appearance", "Loss Prevention", "QPU", "Safety"],
       tasks: [
         {
@@ -337,6 +339,8 @@ const state = {
   activeUserId: "usr-admin",
   viewAsUserId: null,
   dragTaskId: null,
+  storeManagerLocale: "en",
+  storeManagerLocaleOverride: false,
 };
 
 const elements = {
@@ -377,6 +381,10 @@ const elements = {
   taskAssigneeEmail: document.getElementById("detail-task-email"),
   viewAsSelect: document.getElementById("view-as-select"),
   viewAsBanner: document.getElementById("view-as-banner"),
+  storeManagerTitle: document.getElementById("store-manager-title"),
+  storeManagerSubtitle: document.getElementById("store-manager-subtitle"),
+  storeManagerLocaleSelect: document.getElementById("store-manager-locale"),
+  storeManagerLanguageLabel: document.getElementById("store-manager-language-label"),
   adminFilterAuditor: document.getElementById("admin-filter-auditor"),
   adminFilterStore: document.getElementById("admin-filter-store"),
   adminFilterStatus: document.getElementById("admin-filter-status"),
@@ -385,6 +393,59 @@ const elements = {
   adminAuditRows: document.getElementById("admin-audit-rows"),
   profileList: document.getElementById("profile-list"),
   assigneeList: document.getElementById("assignee-list"),
+};
+
+const storeManagerLocaleContent = {
+  en: {
+    screenTitle: "My Assigned Tasks",
+    screenSubtitle: "Upload proof and submit tasks to the reviewer queue.",
+    languageLabel: "Language",
+    languageEnglish: "English",
+    languageFrench: "French",
+    currentAuditLabel: "Current audit",
+    noAuditTitle: "No audit selected",
+    noAuditBody: "Assign an audit to view store manager tasks.",
+    managerBadge: "Store Manager",
+    tasksCount: (count) => `${count} tasks`,
+    duePrefix: "Due",
+    overdueLabel: "Overdue",
+    managerNotesLabel: "Manager notes:",
+    reviewerNotesLabel: "Reviewer notes:",
+    proofUploadLabel: "Proof upload",
+    notesToReviewerLabel: "Notes to reviewer",
+    notesPlaceholder: "Add context for the reviewer...",
+    actionCompleted: "Completed",
+    actionSubmitted: "Submitted",
+    actionResubmit: "Resubmit Proof",
+    actionSubmit: "Submit Proof",
+    submissionCount: (count) => `Submission #${count}`,
+    noTasksAssigned: "No tasks assigned to you for this audit.",
+  },
+  fr: {
+    screenTitle: "Mes tâches assignées",
+    screenSubtitle: "Téléversez des preuves et soumettez les tâches à la file de révision.",
+    languageLabel: "Langue",
+    languageEnglish: "Anglais",
+    languageFrench: "Français",
+    currentAuditLabel: "Audit en cours",
+    noAuditTitle: "Aucun audit sélectionné",
+    noAuditBody: "Assignez un audit pour voir les tâches du gérant.",
+    managerBadge: "Gérant de magasin",
+    tasksCount: (count) => `${count} tâches`,
+    duePrefix: "Échéance",
+    overdueLabel: "En retard",
+    managerNotesLabel: "Notes du responsable :",
+    reviewerNotesLabel: "Notes du réviseur :",
+    proofUploadLabel: "Téléversement des preuves",
+    notesToReviewerLabel: "Notes au réviseur",
+    notesPlaceholder: "Ajoutez du contexte pour le réviseur...",
+    actionCompleted: "Terminé",
+    actionSubmitted: "Soumis",
+    actionResubmit: "Renvoyer la preuve",
+    actionSubmit: "Soumettre la preuve",
+    submissionCount: (count) => `Soumission nº${count}`,
+    noTasksAssigned: "Aucune tâche ne vous est assignée pour cet audit.",
+  },
 };
 
 const api = {
@@ -469,6 +530,47 @@ function getRoleLabel(role) {
   if (role === "admin") return "Admin";
   if (role === "auditor") return "Auditor";
   return "Store Manager";
+}
+
+function detectAuditLanguage(audit) {
+  if (!audit) return "en";
+  const frenchSignals = [
+    "sécurité",
+    "preuve",
+    "affichage",
+    "étiquette",
+    "sortie",
+    "audit",
+    "révision",
+    "tâche",
+  ];
+  const combinedText = [
+    audit.storeName,
+    audit.storeCode,
+    ...(audit.tasks || []).flatMap((task) => [task.title, task.managerNotes, task.reviewerNotes]),
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+  return frenchSignals.some((signal) => combinedText.includes(signal)) ? "fr" : "en";
+}
+
+function getAuditLanguage(audit) {
+  if (!audit) return "en";
+  return audit.language || detectAuditLanguage(audit);
+}
+
+function getStoreManagerStrings() {
+  return storeManagerLocaleContent[state.storeManagerLocale] || storeManagerLocaleContent.en;
+}
+
+function syncStoreManagerLocaleFromAudit() {
+  if (state.storeManagerLocaleOverride) return;
+  const auditLocale = getAuditLanguage(getSelectedAudit());
+  state.storeManagerLocale = auditLocale;
+  if (elements.storeManagerLocaleSelect) {
+    elements.storeManagerLocaleSelect.value = auditLocale;
+  }
 }
 
 function getAuditById(auditId) {
@@ -822,13 +924,31 @@ function renderReviewerQueue() {
 }
 
 function renderStoreManagerView() {
+  syncStoreManagerLocaleFromAudit();
+  const strings = getStoreManagerStrings();
+  if (elements.storeManagerTitle) {
+    elements.storeManagerTitle.textContent = strings.screenTitle;
+  }
+  if (elements.storeManagerSubtitle) {
+    elements.storeManagerSubtitle.textContent = strings.screenSubtitle;
+  }
+  if (elements.storeManagerLanguageLabel) {
+    elements.storeManagerLanguageLabel.textContent = strings.languageLabel;
+  }
+  if (elements.storeManagerLocaleSelect) {
+    const englishOption = elements.storeManagerLocaleSelect.querySelector("option[value='en']");
+    const frenchOption = elements.storeManagerLocaleSelect.querySelector("option[value='fr']");
+    if (englishOption) englishOption.textContent = strings.languageEnglish;
+    if (frenchOption) frenchOption.textContent = strings.languageFrench;
+    elements.storeManagerLocaleSelect.value = state.storeManagerLocale;
+  }
   const audit = getSelectedAudit();
   const user = getEffectiveUser();
   const managerName = user?.role === "store-manager" ? user.name : "";
   if (!audit) {
     elements.managerAuditHeader.innerHTML = `
-      <h3>No audit selected</h3>
-      <p class="muted">Assign an audit to view store manager tasks.</p>
+      <h3>${strings.noAuditTitle}</h3>
+      <p class="muted">${strings.noAuditBody}</p>
     `;
     elements.managerTaskList.innerHTML = "";
     return;
@@ -842,13 +962,13 @@ function renderStoreManagerView() {
 
   elements.managerAuditHeader.innerHTML = `
     <div>
-      <p class="muted">Current audit</p>
+      <p class="muted">${strings.currentAuditLabel}</p>
       <h3>${audit.storeName} · ${audit.storeCode}</h3>
       <p>${audit.id} · ${dueWindow}</p>
     </div>
     <div class="manager-header-meta">
-      <span class="badge">${managerName || "Store Manager"}</span>
-      <span class="badge">${managerTasks.length} tasks</span>
+      <span class="badge">${managerName || strings.managerBadge}</span>
+      <span class="badge">${strings.tasksCount(managerTasks.length)}</span>
     </div>
   `;
 
@@ -856,7 +976,7 @@ function renderStoreManagerView() {
   if (!managerTasks.length) {
     const emptyState = document.createElement("p");
     emptyState.className = "muted";
-    emptyState.textContent = "No tasks assigned to you for this audit.";
+    emptyState.textContent = strings.noTasksAssigned;
     elements.managerTaskList.appendChild(emptyState);
     return;
   }
@@ -867,43 +987,43 @@ function renderStoreManagerView() {
     const overdue = isTaskOverdue(task);
     const actionLabel =
       task.status === TaskStatus.APPROVED
-        ? "Completed"
+        ? strings.actionCompleted
         : task.status === TaskStatus.PROOF_SUBMITTED
-          ? "Submitted"
+          ? strings.actionSubmitted
           : task.status === TaskStatus.REJECTED
-            ? "Resubmit Proof"
-            : "Submit Proof";
+            ? strings.actionResubmit
+            : strings.actionSubmit;
     const disableAction = task.status === TaskStatus.APPROVED || task.status === TaskStatus.PROOF_SUBMITTED;
     taskCard.innerHTML = `
       <div class="manager-task-header">
         <div>
           <h4>${task.title}</h4>
-          <p>Due ${formatDate(task.dueDate)} · ${task.id}</p>
+          <p>${strings.duePrefix} ${formatDate(task.dueDate)} · ${task.id}</p>
           <p class="muted">${task.category || ""}</p>
         </div>
         <div class="manager-task-badges">
           <span class="${getStatusBadgeClass(task.status)}">${task.status}</span>
-          ${overdue ? '<span class="badge warning">Overdue</span>' : ""}
+          ${overdue ? `<span class="badge warning">${strings.overdueLabel}</span>` : ""}
         </div>
       </div>
       ${
         task.managerNotes
-          ? `<div class="manager-task-callout">Manager notes: ${task.managerNotes}</div>`
+          ? `<div class="manager-task-callout">${strings.managerNotesLabel} ${task.managerNotes}</div>`
           : ""
       }
       ${
         task.status === TaskStatus.REJECTED && task.reviewerNotes
-          ? `<div class="manager-task-callout">Reviewer notes: ${task.reviewerNotes}</div>`
+          ? `<div class="manager-task-callout">${strings.reviewerNotesLabel} ${task.reviewerNotes}</div>`
           : ""
       }
       <div class="manager-task-body">
         <label class="field">
-          Proof upload
+          ${strings.proofUploadLabel}
           <input type="file" multiple data-task-id="${task.id}" />
         </label>
         <label class="field">
-          Notes to reviewer
-          <textarea rows="3" data-task-notes="${task.id}" placeholder="Add context for the reviewer...">${
+          ${strings.notesToReviewerLabel}
+          <textarea rows="3" data-task-notes="${task.id}" placeholder="${strings.notesPlaceholder}">${
             task.pendingProof?.notes || ""
           }</textarea>
         </label>
@@ -911,7 +1031,7 @@ function renderStoreManagerView() {
           <button class="${disableAction ? "secondary" : "primary"}" data-task-action="${task.id}" ${
             disableAction ? "disabled" : ""
           }>${actionLabel}</button>
-          <span class="subtext">Submission #${task.submissions.length}</span>
+          <span class="subtext">${strings.submissionCount(task.submissions.length)}</span>
         </div>
       </div>
     `;
@@ -1433,6 +1553,7 @@ function switchScreen(target) {
     screenSubtitle.textContent = meta.subtitle;
   }
   if (target === "store-manager") {
+    syncStoreManagerLocaleFromAudit();
     renderStoreManagerView();
   }
   if (target === "admin") {
@@ -1549,6 +1670,14 @@ elements.viewAsSelect.addEventListener("change", (event) => {
   renderExistingTaskOptions();
   renderAdminOverview();
 });
+
+if (elements.storeManagerLocaleSelect) {
+  elements.storeManagerLocaleSelect.addEventListener("change", (event) => {
+    state.storeManagerLocale = event.target.value;
+    state.storeManagerLocaleOverride = true;
+    renderStoreManagerView();
+  });
+}
 
 [elements.adminFilterAuditor, elements.adminFilterStore, elements.adminFilterStatus].forEach((filter) => {
   filter.addEventListener("change", renderAdminOverview);
