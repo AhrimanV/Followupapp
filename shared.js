@@ -320,6 +320,7 @@ const storeManagerLocaleContent = {
     managerNotesLabel: "Manager notes:",
     reviewerNotesLabel: "Reviewer notes:",
     proofUploadLabel: "Proof upload",
+    proofUploadRequired: "Please add at least one photo before submitting.",
     notesToReviewerLabel: "Notes to reviewer",
     notesPlaceholder: "Add context for the reviewer...",
     actionCompleted: "Completed",
@@ -347,6 +348,7 @@ const storeManagerLocaleContent = {
     managerNotesLabel: "Notes du responsable :",
     reviewerNotesLabel: "Notes du réviseur :",
     proofUploadLabel: "Téléversement des preuves",
+    proofUploadRequired: "Ajoutez au moins une photo avant de soumettre.",
     notesToReviewerLabel: "Notes au réviseur",
     notesPlaceholder: "Ajoutez du contexte pour le réviseur...",
     actionCompleted: "Terminé",
@@ -758,6 +760,7 @@ export function renderStoreManagerView(elements, { onTaskUpdated } = {}) {
         <label class="field">
           ${strings.proofUploadLabel}
           <input type="file" multiple data-task-id="${task.id}" />
+          <p class="field-error hidden" data-task-file-error="${task.id}">${strings.proofUploadRequired}</p>
         </label>
         <label class="field">
           ${strings.notesToReviewerLabel}
@@ -777,16 +780,32 @@ export function renderStoreManagerView(elements, { onTaskUpdated } = {}) {
     const actionButton = taskCard.querySelector("[data-task-action]");
     const notesField = taskCard.querySelector("[data-task-notes]");
     const fileInput = taskCard.querySelector("input[type='file']");
+    const fileError = taskCard.querySelector("[data-task-file-error]");
 
     actionButton.addEventListener("click", async () => {
       const notes = notesField.value.trim();
       const photos = Array.from(fileInput.files || []).map((file) => file.name);
+      if (!fileInput.files || fileInput.files.length === 0) {
+        if (fileError) {
+          fileError.classList.remove("hidden");
+        }
+        return;
+      }
+      if (fileError) {
+        fileError.classList.add("hidden");
+      }
       await api.uploadProof({ taskId: task.id, notes, photos });
       await api.submitProof({ taskId: task.id });
       if (onTaskUpdated) {
         onTaskUpdated();
       }
       renderStoreManagerView(elements, { onTaskUpdated });
+    });
+
+    fileInput.addEventListener("change", () => {
+      if (fileError && fileInput.files && fileInput.files.length > 0) {
+        fileError.classList.add("hidden");
+      }
     });
 
     elements.managerTaskList.appendChild(taskCard);
