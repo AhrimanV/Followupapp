@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Audit Follow-Up Tracking App · Store Manager</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app app--store-manager">
+      <header class="store-manager-topbar">
+        <div class="store-manager-brand">
+          <span class="brand-mark">AF</span>
+          <div>
+            <p class="eyebrow">Store Manager Workspace</p>
+            <h2 id="store-manager-title">My Assigned Tasks</h2>
+            <p id="store-manager-subtitle">Upload proof and submit tasks to the reviewer queue.</p>
+          </div>
+        </div>
+        <div class="store-manager-actions">
+          <label class="field compact" id="store-manager-language-field">
+            <span class="muted" id="store-manager-language-label">Language</span>
+            <select id="store-manager-locale">
+              <option value="en">English</option>
+              <option value="fr">Français</option>
+            </select>
+          </label>
+          <button class="secondary">Message Reviewer</button>
+        </div>
+      </header>
+      <main class="store-manager-main">
+        <div class="store-manager-banner hidden" id="store-manager-banner"></div>
+        <section class="content" id="screen-store-manager">
+          <div class="card manager-header" id="manager-audit-header"></div>
+          <div class="card">
+            <div class="table-header">
+              <div>
+                <h3>Task Overview</h3>
+                <p class="muted">Stay on top of due dates and proof submissions.</p>
+              </div>
+            </div>
+            <div class="manager-task-list" id="manager-task-list"></div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script type="module" src="store-manager.js"></script>
+  </body>
+</html>
