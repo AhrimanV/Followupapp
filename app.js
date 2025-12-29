@@ -28,6 +28,10 @@ const screenMeta = {
     title: "Reviewer Queue",
     subtitle: "Approve or reject incoming submissions.",
   },
+  "store-manager": {
+    title: "Store Manager",
+    subtitle: "Submit proof for tasks assigned to you.",
+  },
 };
 
 const TaskStatus = {
@@ -153,6 +157,7 @@ const store = {
 const state = {
   selectedAuditId: "AUD-2025-001",
   selectedTaskId: "TSK-1003",
+  managerName: "Sam Thompson",
 };
 
 const elements = {
@@ -174,6 +179,8 @@ const elements = {
   queueAlert: document.getElementById("queue-alert"),
   queueAlertText: document.getElementById("queue-alert-text"),
   queueAlertAction: document.getElementById("queue-alert-action"),
+  managerAuditHeader: document.getElementById("manager-audit-header"),
+  managerTaskList: document.getElementById("manager-task-list"),
   existingTaskSelect: document.getElementById("existing-task-select"),
   addExistingTaskButton: document.getElementById("add-existing-task"),
   auditTaskSummary: document.getElementById("audit-task-summary"),
@@ -325,6 +332,16 @@ function getStatusBadgeClass(status) {
     return "badge danger";
   }
   return "badge";
+}
+
+function isTaskOverdue(task) {
+  if (!task?.dueDate) return false;
+  if (task.status === TaskStatus.APPROVED) return false;
+  const due = new Date(task.dueDate);
+  const today = new Date();
+  due.setHours(0, 0, 0, 0);
+  today.setHours(0, 0, 0, 0);
+  return due < today;
 }
 
 function renderTaskList() {
@@ -483,6 +500,110 @@ function renderReviewerQueue() {
   });
 }
 
+function renderStoreManagerView() {
+  const audit = getAudit();
+  if (!audit) {
+    elements.managerAuditHeader.innerHTML = `
+      <h3>No audit selected</h3>
+      <p class="muted">Assign an audit to view store manager tasks.</p>
+    `;
+    elements.managerTaskList.innerHTML = "";
+    return;
+  }
+
+  const auditTasks = getAuditTasks(audit);
+  const managerTasks = auditTasks.filter((task) => task.assignedTo === state.managerName);
+  const dueWindow = formatDateRange(managerTasks.map((task) => task.dueDate));
+
+  elements.managerAuditHeader.innerHTML = `
+    <div>
+      <p class="muted">Current audit</p>
+      <h3>${audit.storeName} · ${audit.storeCode}</h3>
+      <p>${audit.id} · ${dueWindow}</p>
+    </div>
+    <div class="manager-header-meta">
+      <span class="badge">${state.managerName}</span>
+      <span class="badge">${managerTasks.length} tasks</span>
+    </div>
+  `;
+
+  elements.managerTaskList.innerHTML = "";
+  if (!managerTasks.length) {
+    const emptyState = document.createElement("p");
+    emptyState.className = "muted";
+    emptyState.textContent = "No tasks assigned to you for this audit.";
+    elements.managerTaskList.appendChild(emptyState);
+    return;
+  }
+
+  managerTasks.forEach((task) => {
+    const taskCard = document.createElement("div");
+    taskCard.className = "manager-task-card";
+    const overdue = isTaskOverdue(task);
+    const actionLabel =
+      task.status === TaskStatus.APPROVED
+        ? "Completed"
+        : task.status === TaskStatus.PROOF_SUBMITTED
+          ? "Submitted"
+          : task.status === TaskStatus.REJECTED
+            ? "Resubmit Proof"
+            : "Submit Proof";
+    const disableAction = task.status === TaskStatus.APPROVED || task.status === TaskStatus.PROOF_SUBMITTED;
+    taskCard.innerHTML = `
+      <div class="manager-task-header">
+        <div>
+          <h4>${task.title}</h4>
+          <p>Due ${formatDate(task.dueDate)} · ${task.id}</p>
+        </div>
+        <div class="manager-task-badges">
+          <span class="${getStatusBadgeClass(task.status)}">${task.status}</span>
+          ${overdue ? '<span class="badge warning">Overdue</span>' : ""}
+        </div>
+      </div>
+      ${
+        task.status === TaskStatus.REJECTED && task.reviewerNotes
+          ? `<div class="manager-task-callout">Reviewer notes: ${task.reviewerNotes}</div>`
+          : ""
+      }
+      <div class="manager-task-body">
+        <label class="field">
+          Proof upload
+          <input type="file" multiple data-task-id="${task.id}" />
+        </label>
+        <label class="field">
+          Notes to reviewer
+          <textarea rows="3" data-task-notes="${task.id}" placeholder="Add context for the reviewer...">${
+            task.pendingProof?.notes || ""
+          }</textarea>
+        </label>
+        <div class="manager-task-actions">
+          <button class="${disableAction ? "secondary" : "primary"}" data-task-action="${task.id}" ${
+            disableAction ? "disabled" : ""
+          }>${actionLabel}</button>
+          <span class="subtext">Submission #${task.submissions.length}</span>
+        </div>
+      </div>
+    `;
+
+    const actionButton = taskCard.querySelector("[data-task-action]");
+    const notesField = taskCard.querySelector("[data-task-notes]");
+    const fileInput = taskCard.querySelector("input[type='file']");
+
+    actionButton.addEventListener("click", async () => {
+      const notes = notesField.value.trim();
+      const photos = Array.from(fileInput.files || []).map((file) => file.name);
+      await api.uploadProof({ taskId: task.id, notes, photos });
+      await api.submitProof({ taskId: task.id });
+      renderTaskList();
+      renderReviewerQueue();
+      renderTaskDetail();
+      renderStoreManagerView();
+    });
+
+    elements.managerTaskList.appendChild(taskCard);
+  });
+}
+
 function renderExistingTaskOptions() {
   const audit = getAudit();
   const unassignedTasks = getUnassignedTasks(audit);
@@ -587,6 +708,9 @@ function switchScreen(target) {
     screenTitle.textContent = meta.title;
     screenSubtitle.textContent = meta.subtitle;
   }
+  if (target === "store-manager") {
+    renderStoreManagerView();
+  }
 }
 
 navButtons.forEach((button) => {
@@ -675,6 +799,7 @@ elements.rejectButton.addEventListener("click", async () => {
 renderTaskList();
 renderTaskDetail();
 renderReviewerQueue();
+renderStoreManagerView();
 renderExistingTaskOptions();
 renderAuditTaskSummary();
 renderTaskPool();

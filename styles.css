@@ -574,3 +574,87 @@ button.full {
   background: #e2e8f0;
   color: #475569;
 }
+
+.manager-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.manager-header h3 {
+  margin: 6px 0;
+}
+
+.manager-header p {
+  margin: 0;
+  color: #6b7280;
+}
+
+.manager-header-meta {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.manager-task-list {
+  display: grid;
+  gap: 16px;
+}
+
+.manager-task-card {
+  border-radius: 16px;
+  border: 1px solid #e5e7eb;
+  padding: 16px 18px;
+  background: #f8fafc;
+}
+
+.manager-task-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.manager-task-header h4 {
+  margin: 0 0 4px;
+  font-size: 1rem;
+}
+
+.manager-task-header p {
+  margin: 0;
+  color: #6b7280;
+  font-size: 0.85rem;
+}
+
+.manager-task-badges {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.manager-task-body {
+  display: grid;
+  gap: 12px;
+}
+
+.manager-task-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.manager-task-actions .subtext {
+  margin: 0;
+}
+
+.manager-task-callout {
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  background: #fef2f2;
+  color: #991b1b;
+  font-size: 0.85rem;
+}

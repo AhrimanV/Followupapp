@@ -23,6 +23,7 @@
           <button class="nav-item" data-screen="task-list">Task List</button>
           <button class="nav-item" data-screen="task-detail">Task Detail</button>
           <button class="nav-item" data-screen="reviewer-queue">Reviewer Queue</button>
+          <button class="nav-item" data-screen="store-manager">Store Manager</button>
         </nav>
         <div class="sidebar-footer">
           <p>Store Code: <strong>ON-204</strong></p>
@@ -259,6 +260,17 @@
               <button class="link" id="queue-alert-action">View submission</button>
             </div>
             <div class="queue" id="reviewer-queue-list"></div>
+          </div>
+        </section>
+
+        <section class="content hidden" id="screen-store-manager">
+          <div class="card manager-header" id="manager-audit-header"></div>
+          <div class="card">
+            <div class="table-header">
+              <h3>My Assigned Tasks</h3>
+              <p class="muted">Upload proof and submit tasks to the reviewer queue.</p>
+            </div>
+            <div class="manager-task-list" id="manager-task-list"></div>
           </div>
         </section>
       </main>
