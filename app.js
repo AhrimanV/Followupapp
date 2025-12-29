@@ -383,6 +383,7 @@ const elements = {
   taskAssigneeEmail: document.getElementById("detail-task-email"),
   viewAsSelect: document.getElementById("view-as-select"),
   viewAsBanner: document.getElementById("view-as-banner"),
+  generateReportButton: document.getElementById("generate-report-button"),
   storeManagerTitle: document.getElementById("store-manager-title"),
   storeManagerSubtitle: document.getElementById("store-manager-subtitle"),
   storeManagerBanner: document.getElementById("store-manager-banner"),
@@ -723,6 +724,74 @@ function getAuditCompletionStatus(audit) {
   if (!audit.tasks.length) return "Open";
   const allApproved = audit.tasks.every((task) => task.status === TaskStatus.APPROVED);
   return allApproved ? "Complete" : "Open";
+}
+
+function formatCsvValue(value) {
+  const stringValue = value == null ? "" : String(value);
+  if (/[",\n]/.test(stringValue)) {
+    return `"${stringValue.replace(/"/g, '""')}"`;
+  }
+  return stringValue;
+}
+
+function buildAuditReportRows() {
+  const audits = getAccessibleAudits();
+  return audits.map((audit) => {
+    const owner = getUserById(audit.ownerId);
+    const tasks = getVisibleTasksForAudit(audit);
+    const completedTasks = tasks.filter((task) => task.status === TaskStatus.APPROVED).length;
+    return {
+      id: audit.id,
+      storeCode: audit.storeCode,
+      storeName: audit.storeName,
+      owner: owner ? owner.name : "Unassigned",
+      createdAt: formatDate(audit.createdAt),
+      status: getAuditCompletionStatus(audit),
+      taskCount: tasks.length,
+      tasksComplete: completedTasks,
+    };
+  });
+}
+
+function downloadAuditReport() {
+  const rows = buildAuditReportRows();
+  const headers = [
+    "Audit ID",
+    "Store Code",
+    "Store Name",
+    "Audit Owner",
+    "Audit Date",
+    "Status",
+    "Tasks",
+    "Tasks Complete",
+  ];
+  const csvRows = [headers.join(",")];
+  rows.forEach((row) => {
+    const values = [
+      row.id,
+      row.storeCode,
+      row.storeName,
+      row.owner,
+      row.createdAt,
+      row.status,
+      row.taskCount,
+      row.tasksComplete,
+    ].map(formatCsvValue);
+    csvRows.push(values.join(","));
+  });
+
+  const csvContent = csvRows.join("\n");
+  const dateStamp = new Date().toISOString().split("T")[0];
+  const filename = `Audit_Report_${dateStamp}.csv`;
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
 }
 
 function getRoleBadgeClass(role) {
@@ -1717,6 +1786,13 @@ elements.viewAsSelect.addEventListener("change", (event) => {
   if (!isAdmin()) return;
   applyViewAsChange(event.target.value);
 });
+
+if (elements.generateReportButton) {
+  elements.generateReportButton.addEventListener("click", () => {
+    if (!isAdmin() || isViewingAsUser()) return;
+    downloadAuditReport();
+  });
+}
 
 if (elements.exitViewAsButton) {
   elements.exitViewAsButton.addEventListener("click", () => {
