@@ -657,7 +657,12 @@ export function renderStoreManagerView(elements, { onTaskUpdated } = {}) {
     elements.storeManagerTitle.textContent = strings.screenTitle;
   }
   if (elements.storeManagerSubtitle) {
-    elements.storeManagerSubtitle.textContent = strings.screenSubtitle;
+    elements.storeManagerSubtitle.textContent = audit
+      ? `${strings.screenSubtitle} ${strings.currentAuditLabel}: ${audit.storeName} · ${audit.storeCode}.`
+      : strings.screenSubtitle;
+  }
+  if (elements.storeManagerAuditLabel) {
+    elements.storeManagerAuditLabel.textContent = strings.currentAuditLabel;
   }
   if (elements.storeManagerLanguageLabel) {
     elements.storeManagerLanguageLabel.textContent = strings.languageLabel;
