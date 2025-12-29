@@ -298,6 +298,7 @@ export const store = {
       ],
     },
   ],
+  auditEmailSends: [],
 };
 
 export const state = {
@@ -369,6 +370,31 @@ const storeManagerLocaleContent = {
     submissionCount: (count) => `Soumission nº${count}`,
     noTasksAssigned: "Aucune tâche ne vous est assignée pour cet audit.",
     proofOptionalNote: "Le téléversement de preuves n'est pas requis pour cette tâche.",
+  },
+};
+
+const auditEmailTemplates = {
+  en: {
+    subject: (audit) => `Audit follow-up: ${audit.storeName} (${audit.storeCode || audit.id})`,
+    greeting: (assigneeName) => `Hi ${assigneeName || "there"},`,
+    intro: "A new audit follow-up has been created and is ready for your review.",
+    detailsLabel: "Audit details",
+    summaryLabel: "Summary highlights",
+    tasksLabel: "Total tasks",
+    dueLabel: "Due date",
+    linkLabel: "Open audit",
+    closing: "Thanks for keeping the follow-up on track.",
+  },
+  fr: {
+    subject: (audit) => `Suivi d'audit : ${audit.storeName} (${audit.storeCode || audit.id})`,
+    greeting: (assigneeName) => `Bonjour ${assigneeName || ""}`.trim() + ",",
+    intro: "Un nouveau suivi d'audit est prêt pour votre révision.",
+    detailsLabel: "Détails de l'audit",
+    summaryLabel: "Points saillants",
+    tasksLabel: "Nombre total de tâches",
+    dueLabel: "Date d'échéance",
+    linkLabel: "Ouvrir l'audit",
+    closing: "Merci de maintenir le suivi sur la bonne voie.",
   },
 };
 
@@ -588,6 +614,63 @@ export function formatDate(value) {
     day: "2-digit",
     year: "numeric",
   });
+}
+
+function formatAuditEmailDeadline(deadline, language) {
+  if (!deadline) {
+    return language === "fr" ? "À confirmer" : "TBD";
+  }
+  const date = new Date(deadline);
+  if (Number.isNaN(date.getTime())) {
+    return language === "fr" ? "À confirmer" : "TBD";
+  }
+  return date.toLocaleDateString(language === "fr" ? "fr-CA" : "en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+export function generateAuditEmailTemplate({ audit, assignee, language, deadline, appLink }) {
+  const locale = language || getAuditLanguage(audit);
+  const template = auditEmailTemplates[locale] || auditEmailTemplates.en;
+  const assigneeName = assignee?.name || assignee?.displayName || assignee?.email || "";
+  const owner = getUserById(audit?.ownerId);
+  const tasksCount = audit?.tasks?.length ?? 0;
+  const summary = audit?.summary || "";
+  const formattedDeadline = formatAuditEmailDeadline(deadline, locale);
+  const subject = template.subject(audit);
+  const bodyLines = [
+    template.greeting(assigneeName),
+    "",
+    template.intro,
+    "",
+    `${template.detailsLabel}:`,
+    `• ${audit?.storeName || "Store"} (${audit?.storeCode || audit?.id || "Audit"})`,
+    `• ${template.tasksLabel}: ${tasksCount}`,
+    `• ${template.dueLabel}: ${formattedDeadline}`,
+    owner ? `• ${locale === "fr" ? "Auditeur" : "Auditor"}: ${owner.name}` : null,
+    appLink ? `• ${template.linkLabel}: ${appLink}` : null,
+    "",
+    summary ? `${template.summaryLabel}:\n${summary}` : null,
+    "",
+    template.closing,
+  ].filter(Boolean);
+
+  return {
+    subject,
+    body: bodyLines.join("\n"),
+  };
+}
+
+export function logAuditEmailSend(payload) {
+  const sendEvent = {
+    id: `EMAIL-${store.auditEmailSends.length + 1}`,
+    sentAt: new Date().toISOString(),
+    ...payload,
+  };
+  store.auditEmailSends.unshift(sendEvent);
+  return sendEvent;
 }
 
 export function getStatusBadgeClass(status) {
