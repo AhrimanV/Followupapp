@@ -48,6 +48,25 @@ function renderStoreManager() {
   renderStoreManagerView(elements);
 }
 
+function applyStoreManagerProfile(profile) {
+  if (!profile || typeof profile !== "object") return;
+  if (profile.activeUserId) {
+    state.activeUserId = profile.activeUserId;
+  }
+  if (profile.selectedAuditId) {
+    state.selectedAuditId = profile.selectedAuditId;
+  }
+  if (profile.selectedTaskId) {
+    state.selectedTaskId = profile.selectedTaskId;
+  }
+  if (profile.storeManagerLocale) {
+    state.storeManagerLocale = profile.storeManagerLocale;
+  }
+  if (Object.prototype.hasOwnProperty.call(profile, "storeManagerLocaleOverride")) {
+    state.storeManagerLocaleOverride = profile.storeManagerLocaleOverride;
+  }
+}
+
 if (elements.storeManagerAuditSelect) {
   elements.storeManagerAuditSelect.addEventListener("change", (event) => {
     state.selectedAuditId = event.target.value || null;
@@ -70,8 +89,13 @@ if (elements.messageReviewerButton) {
 }
 
 function init() {
-  state.activeUserId = "usr-sm1";
-  state.storeManagerLocaleOverride = false;
+  const testProfile = window.STORE_MANAGER_TEST_PROFILE;
+  if (testProfile) {
+    applyStoreManagerProfile(testProfile);
+  } else {
+    state.activeUserId = "usr-sm1";
+    state.storeManagerLocaleOverride = false;
+  }
   ensureSelectedAudit();
   renderStoreManager();
 }
