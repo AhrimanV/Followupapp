@@ -150,12 +150,7 @@
               </label>
               <label class="field">
                 Audit Type
-                <select id="audit-type-select">
-                  <option value="Safety">Safety</option>
-                  <option value="Operations">Operations</option>
-                  <option value="Loss Prevention">Loss Prevention</option>
-                  <option value="Compliance">Compliance</option>
-                </select>
+                <select id="audit-type-select"></select>
               </label>
               <label class="field">
                 Store Code
@@ -356,21 +351,79 @@
         </section>
 
         <section class="content hidden" id="screen-create-tasks">
+          <div class="card">
+            <h3>Audit Type Library</h3>
+            <p class="muted">Manage templates by audit type library.</p>
+            <div class="grid two">
+              <label class="field">
+                Library
+                <select id="audit-type-library-select"></select>
+              </label>
+              <label class="field">
+                Actions
+                <div class="pill-group">
+                  <button class="secondary" id="add-audit-type-button">Add new audit type</button>
+                  <button class="primary" id="save-audit-type-button">Save audit type</button>
+                </div>
+              </label>
+            </div>
+            <div class="grid two">
+              <label class="field">
+                Type name (EN)
+                <input id="audit-type-name-en" type="text" />
+              </label>
+              <label class="field">
+                Type name (FR)
+                <input id="audit-type-name-fr" type="text" />
+              </label>
+            </div>
+            <p class="muted hidden" id="audit-type-readonly-note">
+              Only admins can edit audit type libraries.
+            </p>
+          </div>
           <div class="grid two">
             <div class="card">
+              <h3>Category Library</h3>
+              <p class="muted">Organize templates by category for the selected audit type.</p>
+              <div class="grid two">
+                <label class="field">
+                  Category name (EN)
+                  <input id="category-name-input-en" type="text" />
+                </label>
+                <label class="field">
+                  Category name (FR)
+                  <input id="category-name-input-fr" type="text" />
+                </label>
+              </div>
+              <button class="secondary full" id="save-category-button">Add Category</button>
+              <div class="task-pool" id="category-list"></div>
+            </div>
+            <div class="card">
               <h3>Create Task Template</h3>
-              <label class="field">
-                Template Title
-                <input id="task-title-input" type="text" value="Emergency exit signage" />
-              </label>
+              <div class="grid two">
+                <label class="field">
+                  Template Title (EN)
+                  <input id="task-title-input-en" type="text" />
+                </label>
+                <label class="field">
+                  Template Title (FR)
+                  <input id="task-title-input-fr" type="text" />
+                </label>
+              </div>
               <label class="field">
                 Category
-                <input id="task-category-input" type="text" value="Loss Prevention" />
+                <select id="task-category-select"></select>
               </label>
-              <label class="field">
-                Template Notes
-                <textarea id="task-notes-input" rows="3">Ensure all emergency exits have clear signage and no obstructions.</textarea>
-              </label>
+              <div class="grid two">
+                <label class="field">
+                  Template Notes (EN)
+                  <textarea id="task-notes-input-en" rows="3"></textarea>
+                </label>
+                <label class="field">
+                  Template Notes (FR)
+                  <textarea id="task-notes-input-fr" rows="3"></textarea>
+                </label>
+              </div>
               <label class="field field-inline">
                 <input id="task-proof-required-input" type="checkbox" checked />
                 Proof required
@@ -380,15 +433,48 @@
             <div class="card">
               <h3>Suggested Templates</h3>
               <div class="chip-list">
-                <span class="chip" data-category="Loss Prevention">Emergency exit signage</span>
-                <span class="chip" data-category="Store Appearance">Stock room labeling</span>
-                <span class="chip" data-category="Safety">Fire extinguisher inspection</span>
+                <span
+                  class="chip"
+                  data-category="Loss Prevention"
+                  data-category-en="Loss Prevention"
+                  data-category-fr="Prévention des pertes"
+                  data-title-en="Emergency exit signage"
+                  data-title-fr="Signalisation des sorties de secours"
+                  data-notes-en="Ensure all emergency exits have clear signage and no obstructions."
+                  data-notes-fr="Assurez-vous que toutes les sorties de secours ont une signalisation claire et sans obstruction."
+                >
+                  Emergency exit signage
+                </span>
+                <span
+                  class="chip"
+                  data-category="Store Appearance"
+                  data-category-en="Store Appearance"
+                  data-category-fr="Apparence du magasin"
+                  data-title-en="Stock room labeling"
+                  data-title-fr="Étiquetage de la réserve"
+                  data-notes-en="Label aisles, bays, and supply zones with updated signage."
+                  data-notes-fr="Étiquetez les allées, baies et zones de stock avec une signalisation à jour."
+                >
+                  Stock room labeling
+                </span>
+                <span
+                  class="chip"
+                  data-category="Safety"
+                  data-category-en="Safety"
+                  data-category-fr="Sécurité"
+                  data-title-en="Fire extinguisher inspection"
+                  data-title-fr="Inspection des extincteurs"
+                  data-notes-en="Verify inspection tags, pressure gauges, and access paths."
+                  data-notes-fr="Vérifiez les étiquettes d'inspection, les manomètres et les accès."
+                >
+                  Fire extinguisher inspection
+                </span>
               </div>
               <button class="secondary full" id="bulk-add-button">Bulk Add (3)</button>
             </div>
             <div class="card">
               <h3>Template Library</h3>
-              <p class="muted">Templates can be reused across multiple audits.</p>
+              <p class="muted">Templates can be reused across multiple audits in this library.</p>
               <div class="task-pool" id="task-pool-list"></div>
             </div>
           </div>

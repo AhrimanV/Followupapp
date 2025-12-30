@@ -138,41 +138,189 @@ export const users = [
 ];
 
 export const store = {
-  taskTemplates: [
+  auditTypes: [
     {
-      id: "TPL-1001",
-      title: "Emergency exit signage",
-      category: "Loss Prevention",
-      notes: "Ensure all emergency exits have clear signage and no obstructions.",
-      requiresProof: true,
+      id: "ATY-1001",
+      name: {
+        en: "Safety",
+        fr: "Sécurité",
+      },
+      categories: [
+        {
+          id: "CAT-2001",
+          name: {
+            en: "Loss Prevention",
+            fr: "Prévention des pertes",
+          },
+          tasks: [
+            {
+              id: "TPL-1001",
+              title: {
+                en: "Emergency exit signage",
+                fr: "Signalisation des sorties de secours",
+              },
+              notes: {
+                en: "Ensure all emergency exits have clear signage and no obstructions.",
+                fr: "Assurez-vous que toutes les sorties de secours ont une signalisation claire et sans obstruction.",
+              },
+              requiresProof: true,
+            },
+          ],
+        },
+        {
+          id: "CAT-2002",
+          name: {
+            en: "Store Appearance",
+            fr: "Apparence du magasin",
+          },
+          tasks: [
+            {
+              id: "TPL-1002",
+              title: {
+                en: "Stock room labeling",
+                fr: "Étiquetage de la réserve",
+              },
+              notes: {
+                en: "Label aisles, bays, and supply zones with updated signage.",
+                fr: "Étiquetez les allées, baies et zones de stock avec une signalisation à jour.",
+              },
+              requiresProof: true,
+            },
+          ],
+        },
+        {
+          id: "CAT-2003",
+          name: {
+            en: "Safety",
+            fr: "Sécurité",
+          },
+          tasks: [
+            {
+              id: "TPL-1003",
+              title: {
+                en: "Fire extinguisher inspection",
+                fr: "Inspection des extincteurs",
+              },
+              notes: {
+                en: "Verify inspection tags, pressure gauges, and access paths.",
+                fr: "Vérifiez les étiquettes d'inspection, les manomètres et les accès.",
+              },
+              requiresProof: true,
+            },
+          ],
+        },
+      ],
     },
     {
-      id: "TPL-1002",
-      title: "Stock room labeling",
-      category: "Store Appearance",
-      notes: "Label aisles, bays, and supply zones with updated signage.",
-      requiresProof: true,
+      id: "ATY-1002",
+      name: {
+        en: "Operations",
+        fr: "Opérations",
+      },
+      categories: [
+        {
+          id: "CAT-2004",
+          name: {
+            en: "Safety",
+            fr: "Sécurité",
+          },
+          tasks: [
+            {
+              id: "TPL-1004",
+              title: {
+                en: "Back room exit lighting",
+                fr: "Éclairage des sorties de l'arrière-boutique",
+              },
+              notes: {
+                en: "Check emergency lighting fixtures and replace bulbs if needed.",
+                fr: "Vérifiez les luminaires d'urgence et remplacez les ampoules si nécessaire.",
+              },
+              requiresProof: true,
+            },
+          ],
+        },
+        {
+          id: "CAT-2005",
+          name: {
+            en: "Store Appearance",
+            fr: "Apparence du magasin",
+          },
+          tasks: [
+            {
+              id: "TPL-1005",
+              title: {
+                en: "Safety poster refresh",
+                fr: "Mise à jour des affiches de sécurité",
+              },
+              notes: {
+                en: "Update compliance posters and ensure they are visible to staff.",
+                fr: "Mettez à jour les affiches de conformité et assurez-vous qu'elles sont visibles.",
+              },
+              requiresProof: true,
+            },
+          ],
+        },
+      ],
     },
     {
-      id: "TPL-1003",
-      title: "Fire extinguisher inspection",
-      category: "Safety",
-      notes: "Verify inspection tags, pressure gauges, and access paths.",
-      requiresProof: true,
+      id: "ATY-1003",
+      name: {
+        en: "Loss Prevention",
+        fr: "Prévention des pertes",
+      },
+      categories: [
+        {
+          id: "CAT-2006",
+          name: {
+            en: "Cash Handling",
+            fr: "Gestion de la caisse",
+          },
+          tasks: [
+            {
+              id: "TPL-1006",
+              title: {
+                en: "Cash till reconciliation",
+                fr: "Rapprochement des caisses",
+              },
+              notes: {
+                en: "Confirm tills are balanced and variances are documented.",
+                fr: "Confirmez que les caisses sont équilibrées et que les écarts sont documentés.",
+              },
+              requiresProof: true,
+            },
+          ],
+        },
+      ],
     },
     {
-      id: "TPL-1004",
-      title: "Back room exit lighting",
-      category: "Safety",
-      notes: "Check emergency lighting fixtures and replace bulbs if needed.",
-      requiresProof: true,
-    },
-    {
-      id: "TPL-1005",
-      title: "Safety poster refresh",
-      category: "Store Appearance",
-      notes: "Update compliance posters and ensure they are visible to staff.",
-      requiresProof: true,
+      id: "ATY-1004",
+      name: {
+        en: "Compliance",
+        fr: "Conformité",
+      },
+      categories: [
+        {
+          id: "CAT-2007",
+          name: {
+            en: "Documentation",
+            fr: "Documentation",
+          },
+          tasks: [
+            {
+              id: "TPL-1007",
+              title: {
+                en: "Policy binder update",
+                fr: "Mise à jour du classeur de politiques",
+              },
+              notes: {
+                en: "Ensure the policy binder includes the latest signed acknowledgements.",
+                fr: "Assurez-vous que le classeur contient les derniers accusés de réception signés.",
+              },
+              requiresProof: false,
+            },
+          ],
+        },
+      ],
     },
   ],
   audits: [
@@ -180,7 +328,7 @@ export const store = {
       id: "AUD-2025-001",
       storeCode: "ON-204",
       storeName: "Toronto Midtown",
-      auditType: "Safety",
+      auditType: "ATY-1001",
       createdAt: "2025-02-12",
       ownerId: "usr-ros1",
       language: "en",
@@ -196,7 +344,7 @@ export const store = {
       directorName: "Guillaume Veillette",
       directorEmail: "guillaume.veillette@bell.ca",
       backupAssigneeEmail: "ros-team@contoso.com",
-      categoryOptions: ["Store Appearance", "Loss Prevention", "QPU", "Safety"],
+      categoryOptions: ["Loss Prevention", "Store Appearance", "Safety"],
       tasks: [
         {
           id: "AT-2001",
@@ -270,7 +418,7 @@ export const store = {
       id: "AUD-2025-002",
       storeCode: "QC-118",
       storeName: "Montreal East",
-      auditType: "Operations",
+      auditType: "ATY-1002",
       createdAt: "2025-02-15",
       ownerId: "usr-ros2",
       language: "fr",
@@ -286,18 +434,18 @@ export const store = {
       directorName: "Guillaume Veillette",
       directorEmail: "guillaume.veillette@bell.ca",
       backupAssigneeEmail: "quebec-ops@contoso.com",
-      categoryOptions: ["Store Appearance", "Loss Prevention", "QPU", "Safety"],
+      categoryOptions: ["Sécurité", "Apparence du magasin"],
       tasks: [
         {
           id: "AT-2004",
           templateId: "TPL-1004",
-          title: "Back room exit lighting",
-          category: "Safety",
+          title: "Éclairage des sorties de l'arrière-boutique",
+          category: "Sécurité",
           dueDate: "2025-03-06",
           assignedTo: "Morgan Lee",
           assignedUserId: "usr-sm2",
           assignedEmail: "morgan.lee@contoso.com",
-          managerNotes: "Confirm fixtures near loading bay.",
+          managerNotes: "Confirmez les luminaires près de la zone de chargement.",
           requiresProof: true,
           status: TaskStatus.PROOF_SUBMITTED,
           submissions: [
@@ -305,7 +453,7 @@ export const store = {
               id: "SUB-1",
               submittedAt: "2025-02-18T15:10:00Z",
               status: TaskStatus.PROOF_SUBMITTED,
-              notes: "Installed new fixtures near loading bay.",
+              notes: "Nouveaux luminaires installés près de la zone de chargement.",
               photos: ["IMG_2041.jpg", "IMG_2042.jpg"],
               reviewerNotes: "",
             },
@@ -319,13 +467,13 @@ export const store = {
         {
           id: "AT-2005",
           templateId: "TPL-1005",
-          title: "Safety poster refresh",
-          category: "Store Appearance",
+          title: "Mise à jour des affiches de sécurité",
+          category: "Apparence du magasin",
           dueDate: "2025-03-08",
           assignedTo: "Morgan Lee",
           assignedUserId: "usr-sm2",
           assignedEmail: "morgan.lee@contoso.com",
-          managerNotes: "Update posters in break room and stock room.",
+          managerNotes: "Mettez à jour les affiches dans la salle de pause et la réserve.",
           requiresProof: true,
           status: TaskStatus.APPROVED,
           submissions: [
@@ -333,9 +481,9 @@ export const store = {
               id: "SUB-1",
               submittedAt: "2025-02-16T09:18:00Z",
               status: TaskStatus.APPROVED,
-              notes: "Updated posters in break room and back office.",
+              notes: "Affiches mises à jour dans la salle de pause et le back office.",
               photos: ["IMG_2100.jpg"],
-              reviewerNotes: "Looks good.",
+              reviewerNotes: "Très bien.",
             },
           ],
           pendingProof: {
@@ -662,20 +810,92 @@ export function getLatestPendingSubmission(audits) {
     .sort((a, b) => new Date(b.submission.submittedAt) - new Date(a.submission.submittedAt))[0];
 }
 
+export function getLocalizedValue(value, locale = "en") {
+  if (!value) return "";
+  if (typeof value === "string") return value;
+  return value[locale] || value.en || value.fr || "";
+}
+
+export function getAuditTypeById(auditTypeId) {
+  return store.auditTypes.find((type) => type.id === auditTypeId);
+}
+
+export function getAuditTypeLabel(auditTypeId, locale = "en") {
+  const auditType = getAuditTypeById(auditTypeId);
+  return auditType ? getLocalizedValue(auditType.name, locale) : auditTypeId || "";
+}
+
+export function getAuditTypeCategoryNames(auditTypeId, locale = "en") {
+  const auditType = getAuditTypeById(auditTypeId);
+  if (!auditType) return [];
+  return auditType.categories.map((category) => getLocalizedValue(category.name, locale));
+}
+
+export function getAuditTypeTemplates(auditTypeId, locale = "en") {
+  const auditType = getAuditTypeById(auditTypeId);
+  if (!auditType) return [];
+  return auditType.categories.flatMap((category) =>
+    category.tasks.map((task) => ({
+      id: task.id,
+      title: getLocalizedValue(task.title, locale),
+      category: getLocalizedValue(category.name, locale),
+      notes: getLocalizedValue(task.notes, locale),
+      requiresProof: task.requiresProof !== false,
+      categoryId: category.id,
+      auditTypeId: auditType.id,
+    })),
+  );
+}
+
+export function getAuditTypeTemplateEntry(auditTypeId, templateId) {
+  const auditType = getAuditTypeById(auditTypeId);
+  if (!auditType) return null;
+  for (const category of auditType.categories) {
+    const template = category.tasks.find((task) => task.id === templateId);
+    if (template) {
+      return { auditType, category, template };
+    }
+  }
+  return null;
+}
+
 export function getUnassignedTemplates(audit) {
-  if (!audit) return store.taskTemplates;
-  return store.taskTemplates.filter(
+  if (!audit) return [];
+  const locale = getAuditLanguage(audit);
+  return getAuditTypeTemplates(audit.auditType, locale).filter(
     (template) => !audit.tasks.some((task) => task.templateId === template.id),
   );
 }
 
 export function generateTemplateId() {
-  const maxId = store.taskTemplates.reduce((max, template) => {
-    const match = template.id.match(/TPL-(\d+)/);
+  const templates = store.auditTypes.flatMap((type) =>
+    type.categories.flatMap((category) => category.tasks),
+  );
+  const maxId = templates.reduce((max, template) => {
+    const match = template.id?.match?.(/TPL-(\d+)/);
     if (!match) return max;
     return Math.max(max, Number.parseInt(match[1], 10));
   }, 1000);
   return `TPL-${String(maxId + 1).padStart(4, "0")}`;
+}
+
+export function generateAuditTypeId() {
+  const maxId = store.auditTypes.reduce((max, type) => {
+    const match = type.id?.match?.(/ATY-(\d+)/);
+    if (!match) return max;
+    return Math.max(max, Number.parseInt(match[1], 10));
+  }, 1000);
+  return `ATY-${String(maxId + 1).padStart(4, "0")}`;
+}
+
+export function generateAuditCategoryId() {
+  const categories = store.auditTypes.flatMap((type) => type.categories);
+  const maxId = categories.reduce((max, category) => {
+    const match = category.id?.match?.(/CAT-(\d+)/);
+    if (!match) return max;
+    return Math.max(max, Number.parseInt(match[1], 10));
+  }, 2000);
+  return `CAT-${String(maxId + 1).padStart(4, "0")}`;
 }
 
 export function generateAuditTaskId() {
@@ -726,7 +946,7 @@ export function generateAuditEmailTemplate({ audit, assignee, language, deadline
     storeCode: audit?.storeCode || audit?.id || "Audit",
     auditId: audit?.id || "",
     assigneeName,
-    auditType: audit?.auditType || "",
+    auditType: getAuditTypeLabel(audit?.auditType, locale),
     tasksCount,
     dueDate: formattedDeadline,
     auditorName: owner?.name || "",
