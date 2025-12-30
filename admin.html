@@ -39,7 +39,7 @@
           </div>
           <div class="topbar-actions">
             <button class="secondary admin-only" id="generate-report-button">Generate Report</button>
-            <button class="primary">New Audit</button>
+            <button class="primary" id="new-audit-button">New Audit</button>
           </div>
         </header>
 
@@ -55,7 +55,7 @@
                 Audit Date
                 <input type="date" value="2025-02-14" />
               </label>
-              <button class="primary full">Continue</button>
+              <button class="primary full" id="home-continue-button">Continue</button>
             </div>
             <div class="card summary">
               <h3>Store Snapshot</h3>
@@ -158,8 +158,12 @@
               <input id="audit-photos-input" type="text" value="https://sharepoint/ProofLibrary/Proof/AUD-2025-001" />
             </label>
             <div class="actions">
-              <button class="secondary">Save Draft</button>
+              <button class="secondary" id="save-draft-button">Save Draft</button>
               <button class="primary" id="save-continue-button">Save & Continue</button>
+            </div>
+            <div class="alert info hidden" id="audit-draft-alert">
+              <span id="audit-draft-message">Draft saved locally.</span>
+              <span class="muted" id="audit-draft-timestamp"></span>
             </div>
           </div>
           <div class="card">
@@ -392,7 +396,7 @@
               <option value="fr">Français</option>
             </select>
           </label>
-          <button class="secondary">Message Reviewer</button>
+          <button class="secondary" id="admin-message-reviewer-button">Message Reviewer</button>
         </div>
       </header>
       <main class="store-manager-main">

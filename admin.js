@@ -139,6 +139,13 @@ const elements = {
   auditEmailPreview: document.getElementById("audit-email-preview"),
   auditEmailSendLog: document.getElementById("audit-email-send-log"),
   auditNotificationLog: document.getElementById("audit-notification-log"),
+  homeContinueButton: document.getElementById("home-continue-button"),
+  newAuditButton: document.getElementById("new-audit-button"),
+  saveDraftButton: document.getElementById("save-draft-button"),
+  auditDraftAlert: document.getElementById("audit-draft-alert"),
+  auditDraftMessage: document.getElementById("audit-draft-message"),
+  auditDraftTimestamp: document.getElementById("audit-draft-timestamp"),
+  adminMessageReviewerButton: document.getElementById("admin-message-reviewer-button"),
 };
 
 const storeManagerElements = {
@@ -322,6 +329,50 @@ function renderAuditNotificationLog(auditId) {
     `;
     elements.auditNotificationLog.appendChild(item);
   });
+}
+
+function showDraftAlert(message) {
+  if (!elements.auditDraftAlert) return;
+  if (elements.auditDraftMessage) {
+    elements.auditDraftMessage.textContent = message;
+  }
+  if (elements.auditDraftTimestamp) {
+    elements.auditDraftTimestamp.textContent = new Date().toLocaleString("en-US");
+  }
+  elements.auditDraftAlert.classList.remove("hidden");
+}
+
+function getNextAuditId() {
+  const year = new Date().getFullYear();
+  const index = String(store.audits.length + 1).padStart(3, "0");
+  return `AUD-${year}-${index}`;
+}
+
+function resetCreateAuditForm() {
+  const today = new Date().toISOString().split("T")[0];
+  if (elements.auditIdInput) elements.auditIdInput.value = getNextAuditId();
+  if (elements.auditDateInput) elements.auditDateInput.value = today;
+  if (elements.auditOwnerInput) elements.auditOwnerInput.value = getActiveUser()?.name || "";
+  if (elements.auditStoreInput) elements.auditStoreInput.value = "";
+  if (elements.auditAssigneeInput) elements.auditAssigneeInput.value = "";
+  if (elements.auditDeadlineInput) elements.auditDeadlineInput.value = "";
+  if (elements.auditReminderInput) elements.auditReminderInput.value = 7;
+  if (elements.auditLanguageSelect) elements.auditLanguageSelect.value = "en";
+  if (elements.auditAppLinkInput) elements.auditAppLinkInput.value = "";
+  if (elements.auditSummaryInput) elements.auditSummaryInput.value = "";
+  if (elements.auditPhotosInput) elements.auditPhotosInput.value = "";
+  if (elements.auditEmailPreview) {
+    elements.auditEmailPreview.textContent = "Preview will appear here.";
+  }
+  if (elements.auditEmailSendLog) {
+    elements.auditEmailSendLog.textContent = "No audit emails sent yet.";
+  }
+  if (elements.auditNotificationLog) {
+    elements.auditNotificationLog.textContent = "No notifications dispatched yet.";
+  }
+  if (elements.auditDraftAlert) {
+    elements.auditDraftAlert.classList.add("hidden");
+  }
 }
 
 const defaultEscalationRules = {
@@ -1088,6 +1139,50 @@ navButtons.forEach((button) => {
   });
 });
 
+if (elements.homeContinueButton) {
+  elements.homeContinueButton.addEventListener("click", () => {
+    ensureSelectedAudit();
+    const selectedAudit = getSelectedAudit();
+    if (selectedAudit) {
+      populateCreateAuditForm(selectedAudit);
+    }
+    switchScreen("create-audit");
+  });
+}
+
+if (elements.newAuditButton) {
+  elements.newAuditButton.addEventListener("click", () => {
+    resetCreateAuditForm();
+    switchScreen("create-audit");
+  });
+}
+
+if (elements.saveDraftButton) {
+  elements.saveDraftButton.addEventListener("click", () => {
+    const audit = getSelectedAudit();
+    if (!audit) return;
+    const language = elements.auditLanguageSelect?.value || getAuditLanguage(audit);
+    audit.language = language;
+    const deadline = elements.auditDeadlineInput?.value || "";
+    audit.deadline = deadline;
+    const reminderCadenceDays = getReminderCadenceFromInput(audit);
+    if (reminderCadenceDays !== null && reminderCadenceDays !== undefined) {
+      audit.reminderCadenceDays = reminderCadenceDays;
+    }
+    if (elements.auditSummaryInput) {
+      audit.summary = elements.auditSummaryInput.value.trim();
+    }
+    const draftAudit = buildAuditDraftFromForm(audit);
+    const assignee = getAssigneeFromInput();
+    const appLink = buildDefaultAuditLink(draftAudit.id || audit.id);
+    if (elements.auditAppLinkInput) {
+      elements.auditAppLinkInput.value = appLink;
+    }
+    renderAuditEmailPreview({ audit: draftAudit, assignee, language, deadline, appLink });
+    showDraftAlert("Draft saved locally.");
+  });
+}
+
 elements.addExistingTaskButton.addEventListener("click", () => {
   const audit = getSelectedAudit();
   const templateId = elements.existingTaskSelect.value;
@@ -1190,6 +1285,12 @@ if (elements.generateReportButton) {
   elements.generateReportButton.addEventListener("click", () => {
     if (!isAdmin()) return;
     downloadAuditReport();
+  });
+}
+
+if (elements.adminMessageReviewerButton) {
+  elements.adminMessageReviewerButton.addEventListener("click", () => {
+    window.alert("Your message has been queued for the reviewer.");
   });
 }
 

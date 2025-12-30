@@ -15,6 +15,7 @@ const elements = {
   storeManagerLanguageLabel: document.getElementById("store-manager-language-label"),
   managerAuditHeader: document.getElementById("manager-audit-header"),
   managerTaskList: document.getElementById("manager-task-list"),
+  messageReviewerButton: document.getElementById("store-manager-message-reviewer"),
 };
 
 function populateAuditSelect() {
@@ -59,6 +60,12 @@ if (elements.storeManagerLocaleSelect) {
     state.storeManagerLocale = event.target.value;
     state.storeManagerLocaleOverride = true;
     renderStoreManager();
+  });
+}
+
+if (elements.messageReviewerButton) {
+  elements.messageReviewerButton.addEventListener("click", () => {
+    window.alert("Your message has been queued for the reviewer.");
   });
 }
 
