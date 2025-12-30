@@ -169,6 +169,7 @@ const elements = {
   sidebarAuditStatus: document.getElementById("sidebar-audit-status"),
   sidebarAuditStatusButton: document.getElementById("sidebar-audit-status-button"),
   saveContinueButton: document.getElementById("save-continue-button"),
+  auditFollowupIterationInput: document.getElementById("audit-followup-iteration-input"),
   auditIdInput: document.getElementById("audit-id-input"),
   auditDateInput: document.getElementById("audit-date-input"),
   auditOwnerInput: document.getElementById("audit-owner-input"),
@@ -217,6 +218,9 @@ const elements = {
   auditDraftMessage: document.getElementById("audit-draft-message"),
   auditDraftTimestamp: document.getElementById("audit-draft-timestamp"),
   adminMessageReviewerButton: document.getElementById("admin-message-reviewer-button"),
+  taskDetailModal: document.getElementById("screen-task-detail"),
+  taskDetailBackdrop: document.getElementById("task-detail-backdrop"),
+  taskDetailCloseButton: document.getElementById("close-task-detail"),
 };
 
 let selectedTemplateCategory = "";
@@ -442,6 +446,7 @@ function buildAuditDraftFromForm(audit) {
   return {
     ...baseAudit,
     id: elements.auditIdInput?.value.trim() || baseAudit.id,
+    followUpIteration: elements.auditFollowupIterationInput?.value || baseAudit.followUpIteration,
     createdAt: elements.auditDateInput?.value || baseAudit.createdAt,
     auditType: elements.auditTypeSelect?.value || baseAudit.auditType,
     storeCode: elements.auditStoreCodeInput?.value.trim() || baseAudit.storeCode,
@@ -627,10 +632,17 @@ function getNextAuditId() {
   return `AUD-${year}-${index}`;
 }
 
+function getNextAuditFollowUpIteration() {
+  return String(store.audits.length + 1).padStart(3, "0");
+}
+
 function resetCreateAuditForm() {
   const today = new Date().toISOString().split("T")[0];
   if (elements.auditIdInput) elements.auditIdInput.value = getNextAuditId();
   if (elements.auditDateInput) elements.auditDateInput.value = today;
+  if (elements.auditFollowupIterationInput) {
+    elements.auditFollowupIterationInput.value = getNextAuditFollowUpIteration();
+  }
   if (elements.auditOwnerInput) elements.auditOwnerInput.value = getActiveUser()?.name || "";
   if (elements.auditTypeSelect) {
     elements.auditTypeSelect.value = store.auditTypes[0]?.id || "";
@@ -800,6 +812,9 @@ function populateCreateAuditForm(audit) {
   if (!audit) return;
   if (elements.auditIdInput) elements.auditIdInput.value = audit.id;
   if (elements.auditDateInput) elements.auditDateInput.value = audit.createdAt || "";
+  if (elements.auditFollowupIterationInput) {
+    elements.auditFollowupIterationInput.value = audit.followUpIteration || "";
+  }
   if (elements.auditOwnerInput) {
     const owner = getUserById(audit.ownerId);
     elements.auditOwnerInput.value = owner?.name || "";
@@ -884,9 +899,7 @@ function renderTaskList() {
       <span><span class="${getStatusBadgeClass(task.status)}">${task.status}</span></span>
     `;
     row.addEventListener("click", () => {
-      state.selectedTaskId = task.id;
-      renderTaskDetail();
-      switchScreen("task-detail");
+      openTaskDetailModal(task.id);
     });
     elements.taskListRows.appendChild(row);
   });
@@ -1022,9 +1035,7 @@ function renderReviewerQueue() {
     elements.queueAlert.classList.remove("hidden");
     elements.queueAlertText.textContent = `${pendingSubmission.task.title} · ${pendingSubmission.audit.storeName}`;
     elements.queueAlertAction.onclick = () => {
-      state.selectedTaskId = pendingSubmission.task.id;
-      renderTaskDetail();
-      switchScreen("task-detail");
+      openTaskDetailModal(pendingSubmission.task.id);
     };
   } else {
     elements.queueAlert.classList.add("hidden");
@@ -1045,9 +1056,7 @@ function renderReviewerQueue() {
         <button class="secondary">Review</button>
       `;
       card.querySelector("button").addEventListener("click", () => {
-        state.selectedTaskId = task.id;
-        renderTaskDetail();
-        switchScreen("task-detail");
+        openTaskDetailModal(task.id);
       });
       elements.reviewerQueueList.appendChild(card);
     });
@@ -1293,6 +1302,40 @@ function renderTaskTemplatePicker() {
     });
 }
 
+function openTaskDetailModal(taskId) {
+  if (taskId) {
+    state.selectedTaskId = taskId;
+    renderTaskDetail();
+  }
+  if (!elements.taskDetailModal) return;
+  elements.taskDetailModal.classList.remove("hidden");
+  document.body.classList.add("modal-open");
+}
+
+function closeTaskDetailModal() {
+  if (!elements.taskDetailModal) return;
+  elements.taskDetailModal.classList.add("hidden");
+  document.body.classList.remove("modal-open");
+}
+
+function removeTaskFromAudit(taskId) {
+  const taskEntry = getTaskEntry(taskId);
+  if (!taskEntry) return;
+  const { audit, task } = taskEntry;
+  audit.tasks = audit.tasks.filter((entry) => entry.id !== task.id);
+  state.selectedTaskId = audit.tasks[0]?.id || null;
+  renderAuditTaskSummary();
+  renderTaskList();
+  renderReviewerQueue();
+  renderTaskTemplatePicker();
+  renderTaskPool();
+  renderTaskDetail();
+  renderStoreManager();
+  if (!state.selectedTaskId) {
+    closeTaskDetailModal();
+  }
+}
+
 function renderAuditTaskSummary() {
   elements.auditTaskSummary.innerHTML = "";
   const audit = getSelectedAudit();
@@ -1310,13 +1353,17 @@ function renderAuditTaskSummary() {
   }
 
   tasks.forEach((task) => {
-    const item = document.createElement("button");
-    item.type = "button";
+    const item = document.createElement("div");
     item.className = "audit-task-pill";
     item.draggable = true;
     item.innerHTML = `
-      <span>${task.title}</span>
-      <span class="${getStatusBadgeClass(task.status)}">${task.status}</span>
+      <div class="audit-task-content">
+        <span class="audit-task-title">${task.title}</span>
+        <span class="${getStatusBadgeClass(task.status)}">${task.status}</span>
+      </div>
+      <div class="audit-task-actions">
+        <button class="audit-task-remove" type="button">Remove</button>
+      </div>
     `;
 
     item.addEventListener("dragstart", () => {
@@ -1353,9 +1400,13 @@ function renderAuditTaskSummary() {
     });
 
     item.addEventListener("click", () => {
-      state.selectedTaskId = task.id;
-      renderTaskDetail();
-      switchScreen("task-detail");
+      openTaskDetailModal(task.id);
+    });
+
+    const removeButton = item.querySelector(".audit-task-remove");
+    removeButton.addEventListener("click", (event) => {
+      event.stopPropagation();
+      removeTaskFromAudit(task.id);
     });
 
     elements.auditTaskSummary.appendChild(item);
@@ -1879,12 +1930,13 @@ function assignTemplateToAudit(templateId, audit) {
   const templateTitle = getLocalizedValue(entry.template.title, locale);
   const templateNotes = getLocalizedValue(entry.template.notes, locale);
   const categoryLabel = getLocalizedValue(entry.category.name, locale);
+  const deadline = audit.deadline || elements.auditDeadlineInput?.value || "";
   const newTask = {
     id: generateAuditTaskId(),
     templateId: entry.template.id,
     title: templateTitle,
     category: categoryLabel,
-    dueDate: "",
+    dueDate: deadline,
     assignedTo: "",
     assignedUserId: null,
     assignedEmail: "",
@@ -1970,6 +2022,12 @@ function switchScreen(target) {
   if (target === "admin") {
     renderAdminOverview();
   }
+  if (target === "task-detail") {
+    renderTaskDetail();
+    openTaskDetailModal();
+  } else {
+    closeTaskDetailModal();
+  }
 }
 
 navButtons.forEach((button) => {
@@ -2027,6 +2085,24 @@ if (elements.newAuditButton) {
     switchScreen("create-audit");
   });
 }
+
+if (elements.taskDetailCloseButton) {
+  elements.taskDetailCloseButton.addEventListener("click", () => {
+    closeTaskDetailModal();
+  });
+}
+
+if (elements.taskDetailBackdrop) {
+  elements.taskDetailBackdrop.addEventListener("click", () => {
+    closeTaskDetailModal();
+  });
+}
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && !elements.taskDetailModal?.classList.contains("hidden")) {
+    closeTaskDetailModal();
+  }
+});
 
 if (elements.saveDraftButton) {
   elements.saveDraftButton.addEventListener("click", () => {
@@ -2175,6 +2251,7 @@ elements.addTaskButton.addEventListener("click", () => {
 if (elements.saveContinueButton) {
   elements.saveContinueButton.addEventListener("click", () => {
     handleAuditEmailSend();
+    switchScreen("audit-list");
   });
 }
 
@@ -2302,18 +2379,7 @@ if (elements.taskDetailProofInput) {
 
 if (elements.removeTaskButton) {
   elements.removeTaskButton.addEventListener("click", () => {
-    const taskEntry = getTaskEntry(state.selectedTaskId);
-    if (!taskEntry) return;
-    const { audit, task } = taskEntry;
-    audit.tasks = audit.tasks.filter((entry) => entry.id !== task.id);
-    state.selectedTaskId = audit.tasks[0]?.id || null;
-    renderAuditTaskSummary();
-    renderTaskList();
-    renderReviewerQueue();
-    renderTaskTemplatePicker();
-    renderTaskPool();
-    renderTaskDetail();
-    renderStoreManager();
+    removeTaskFromAudit(state.selectedTaskId);
   });
 }
 

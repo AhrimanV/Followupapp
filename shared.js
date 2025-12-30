@@ -326,6 +326,7 @@ export const store = {
   audits: [
     {
       id: "AUD-2025-001",
+      followUpIteration: "001",
       storeCode: "ON-204",
       storeName: "Toronto Midtown",
       auditType: "ATY-1001",
@@ -416,6 +417,7 @@ export const store = {
     },
     {
       id: "AUD-2025-002",
+      followUpIteration: "002",
       storeCode: "QC-118",
       storeName: "Montreal East",
       auditType: "ATY-1002",
