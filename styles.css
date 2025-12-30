@@ -89,6 +89,26 @@ body {
   border-color: #374151;
 }
 
+.sidebar-metrics {
+  display: grid;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #1f2937;
+  color: #cbd5f5;
+  font-size: 0.85rem;
+}
+
+.sidebar-metrics .metric {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.sidebar-metrics .metric strong {
+  color: #f8fafc;
+}
+
 .sidebar-footer {
   margin-top: auto;
   font-size: 0.85rem;
