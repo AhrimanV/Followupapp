@@ -533,6 +533,8 @@ const storeManagerLocaleContent = {
     noAuditBody: "Assign an audit to view store manager tasks.",
     managerBadge: "Store Manager",
     tasksCount: (count) => `${count} tasks`,
+    taskOverviewTitle: "Task Overview",
+    taskOverviewSubtitle: "Stay on top of due dates and proof submissions.",
     dueLabel: "Due",
     duePrefix: "Due",
     dueWindowLabel: "Due window",
@@ -564,6 +566,8 @@ const storeManagerLocaleContent = {
     noAuditBody: "Assignez un audit pour voir les tâches du gérant.",
     managerBadge: "Gérant de magasin",
     tasksCount: (count) => `${count} tâches`,
+    taskOverviewTitle: "Aperçu des tâches",
+    taskOverviewSubtitle: "Suivez les échéances et les soumissions de preuves.",
     dueLabel: "Échéance",
     duePrefix: "Échéance",
     dueWindowLabel: "Période d'échéance",
@@ -1126,6 +1130,12 @@ export function renderStoreManagerView(elements, { onTaskUpdated } = {}) {
   }
   if (elements.storeManagerLanguageLabel) {
     elements.storeManagerLanguageLabel.textContent = strings.languageLabel;
+  }
+  if (elements.storeManagerTaskOverviewTitle) {
+    elements.storeManagerTaskOverviewTitle.textContent = strings.taskOverviewTitle;
+  }
+  if (elements.storeManagerTaskOverviewSubtitle) {
+    elements.storeManagerTaskOverviewSubtitle.textContent = strings.taskOverviewSubtitle;
   }
   if (elements.storeManagerLocaleSelect) {
     const englishOption = elements.storeManagerLocaleSelect.querySelector("option[value='en']");
