@@ -109,6 +109,17 @@ body {
   color: #f8fafc;
 }
 
+.sidebar-metrics .metric-button {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  padding: 0;
+  text-align: left;
+  width: 100%;
+}
+
 .sidebar-footer {
   margin-top: auto;
   font-size: 0.85rem;
@@ -120,6 +131,15 @@ body {
   padding: 2px 8px;
   border-radius: 999px;
   font-size: 0.75rem;
+}
+
+.status-pill-button {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  padding: 0;
 }
 
 .main {
@@ -245,6 +265,19 @@ button.full {
 .metric-card {
   display: grid;
   gap: 6px;
+}
+
+.metric-card .metric-button {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  display: grid;
+  font: inherit;
+  gap: 6px;
+  padding: 0;
+  text-align: left;
+  width: 100%;
 }
 
 .metric-card .eyebrow {
