@@ -10,6 +10,8 @@ import {
   formatDate,
   formatDateRange,
   generateAuditTaskId,
+  generateAuditCategoryId,
+  generateAuditTypeId,
   generateTemplateId,
   generateAuditEmailTemplate,
   getAccessibleAudits,
@@ -17,6 +19,11 @@ import {
   isTaskOverdue,
   getActiveUser,
   getAuditLanguage,
+  getAuditTypeById,
+  getAuditTypeCategoryNames,
+  getAuditTypeLabel,
+  getAuditTypeTemplateEntry,
+  getAuditTypeTemplates,
   getLatestPendingSubmission,
   getRoleBadgeClass,
   getRoleLabel,
@@ -29,6 +36,7 @@ import {
   getUnassignedTemplates,
   getUserById,
   getVisibleTasksForAudit,
+  getLocalizedValue,
   isAdmin,
   logAuditEmailSend,
   renderStoreManagerView,
@@ -105,13 +113,25 @@ const elements = {
   existingTaskList: document.getElementById("existing-task-list"),
   auditTaskSummary: document.getElementById("audit-task-summary"),
   auditTaskCount: document.getElementById("audit-task-count"),
-  taskTitleInput: document.getElementById("task-title-input"),
-  taskCategoryInput: document.getElementById("task-category-input"),
-  taskNotesInput: document.getElementById("task-notes-input"),
+  taskTitleInputEn: document.getElementById("task-title-input-en"),
+  taskTitleInputFr: document.getElementById("task-title-input-fr"),
+  taskCategorySelect: document.getElementById("task-category-select"),
+  taskNotesInputEn: document.getElementById("task-notes-input-en"),
+  taskNotesInputFr: document.getElementById("task-notes-input-fr"),
   taskProofRequiredInput: document.getElementById("task-proof-required-input"),
   addTaskButton: document.getElementById("add-task-button"),
   bulkAddButton: document.getElementById("bulk-add-button"),
   taskPoolList: document.getElementById("task-pool-list"),
+  auditTypeLibrarySelect: document.getElementById("audit-type-library-select"),
+  auditTypeNameInputEn: document.getElementById("audit-type-name-en"),
+  auditTypeNameInputFr: document.getElementById("audit-type-name-fr"),
+  saveAuditTypeButton: document.getElementById("save-audit-type-button"),
+  addAuditTypeButton: document.getElementById("add-audit-type-button"),
+  auditTypeReadonlyNote: document.getElementById("audit-type-readonly-note"),
+  categoryNameInputEn: document.getElementById("category-name-input-en"),
+  categoryNameInputFr: document.getElementById("category-name-input-fr"),
+  saveCategoryButton: document.getElementById("save-category-button"),
+  categoryList: document.getElementById("category-list"),
   taskAssignee: document.getElementById("detail-task-assignee"),
   taskAssigneeEmail: document.getElementById("detail-task-email"),
   taskProofRequired: document.getElementById("detail-task-proof"),
@@ -197,6 +217,9 @@ const elements = {
 };
 
 let selectedTemplateCategory = "";
+let selectedAuditTypeId = "";
+let editingCategoryId = "";
+let editingTemplateRef = null;
 
 const storeManagerElements = {
   storeManagerTitle: elements.storeManagerTitle,
@@ -217,6 +240,12 @@ function renderStoreManager() {
   });
   renderSidebarFooter();
   renderSidebarMetrics();
+}
+
+function getCategoryOptionsForAudit(audit) {
+  if (!audit) return [];
+  const locale = getAuditLanguage(audit);
+  return getAuditTypeCategoryNames(audit.auditType, locale);
 }
 
 function formatCsvValue(value) {
@@ -582,7 +611,9 @@ function resetCreateAuditForm() {
   if (elements.auditIdInput) elements.auditIdInput.value = getNextAuditId();
   if (elements.auditDateInput) elements.auditDateInput.value = today;
   if (elements.auditOwnerInput) elements.auditOwnerInput.value = getActiveUser()?.name || "";
-  if (elements.auditTypeSelect) elements.auditTypeSelect.value = "Safety";
+  if (elements.auditTypeSelect) {
+    elements.auditTypeSelect.value = store.auditTypes[0]?.id || "";
+  }
   if (elements.auditStoreCodeInput) elements.auditStoreCodeInput.value = "";
   if (elements.auditStoreInput) elements.auditStoreInput.value = "";
   if (elements.auditStoreManagerInput) elements.auditStoreManagerInput.value = "";
@@ -753,7 +784,7 @@ function populateCreateAuditForm(audit) {
     elements.auditOwnerInput.value = owner?.name || "";
   }
   if (elements.auditTypeSelect) {
-    elements.auditTypeSelect.value = audit.auditType || "Safety";
+    elements.auditTypeSelect.value = audit.auditType || store.auditTypes[0]?.id || "";
   }
   if (elements.auditStoreCodeInput) {
     elements.auditStoreCodeInput.value = audit.storeCode || "";
@@ -936,7 +967,8 @@ function renderTaskDetail() {
   }
   if (elements.taskDetailCategoryInput) {
     elements.taskDetailCategoryInput.disabled = false;
-    elements.taskDetailCategoryInput.innerHTML = audit.categoryOptions
+    const categoryOptions = getCategoryOptionsForAudit(audit);
+    elements.taskDetailCategoryInput.innerHTML = categoryOptions
       .map(
         (category) =>
           `<option value="${category}" ${task.category === category ? "selected" : ""}>${category}</option>`,
@@ -1008,6 +1040,171 @@ function renderReviewerQueue() {
   renderSidebarMetrics();
 }
 
+function formatBilingualText(value) {
+  const en = getLocalizedValue(value, "en");
+  const fr = getLocalizedValue(value, "fr");
+  if (en && fr) return `${en} / ${fr}`;
+  return en || fr || "";
+}
+
+function getSelectedAuditType() {
+  if (!selectedAuditTypeId) {
+    selectedAuditTypeId = store.auditTypes[0]?.id || "";
+  }
+  return getAuditTypeById(selectedAuditTypeId);
+}
+
+function renderAuditTypeLibrary() {
+  if (!elements.auditTypeLibrarySelect) return;
+  elements.auditTypeLibrarySelect.innerHTML = "";
+  store.auditTypes.forEach((type) => {
+    const option = document.createElement("option");
+    option.value = type.id;
+    option.textContent = formatBilingualText(type.name);
+    elements.auditTypeLibrarySelect.appendChild(option);
+  });
+  const fallbackType = store.auditTypes[0]?.id || "";
+  if (!store.auditTypes.some((type) => type.id === selectedAuditTypeId)) {
+    selectedAuditTypeId = fallbackType;
+  }
+  elements.auditTypeLibrarySelect.value = selectedAuditTypeId;
+  const selectedType = getSelectedAuditType();
+  if (elements.auditTypeNameInputEn) {
+    elements.auditTypeNameInputEn.value = getLocalizedValue(selectedType?.name, "en");
+  }
+  if (elements.auditTypeNameInputFr) {
+    elements.auditTypeNameInputFr.value = getLocalizedValue(selectedType?.name, "fr");
+  }
+}
+
+function renderAuditTypeSelectOptions() {
+  if (!elements.auditTypeSelect) return;
+  elements.auditTypeSelect.innerHTML = "";
+  store.auditTypes.forEach((type) => {
+    const option = document.createElement("option");
+    option.value = type.id;
+    option.textContent = getAuditTypeLabel(type.id, "en") || type.id;
+    elements.auditTypeSelect.appendChild(option);
+  });
+  if (store.auditTypes.length && !elements.auditTypeSelect.value) {
+    elements.auditTypeSelect.value = store.auditTypes[0].id;
+  }
+}
+
+function renderCategoryOptions() {
+  if (!elements.taskCategorySelect) return;
+  elements.taskCategorySelect.innerHTML = "";
+  const auditType = getSelectedAuditType();
+  if (!auditType?.categories?.length) {
+    const option = document.createElement("option");
+    option.value = "";
+    option.textContent = "Add a category to continue";
+    elements.taskCategorySelect.appendChild(option);
+    elements.taskCategorySelect.disabled = true;
+    return;
+  }
+  elements.taskCategorySelect.disabled = false;
+  auditType.categories.forEach((category) => {
+    const option = document.createElement("option");
+    option.value = category.id;
+    option.textContent = formatBilingualText(category.name);
+    elements.taskCategorySelect.appendChild(option);
+  });
+  const selectedCategoryId = editingTemplateRef?.categoryId || auditType.categories[0]?.id;
+  if (selectedCategoryId) {
+    elements.taskCategorySelect.value = selectedCategoryId;
+  }
+}
+
+function renderCategoryList() {
+  if (!elements.categoryList) return;
+  elements.categoryList.innerHTML = "";
+  const auditType = getSelectedAuditType();
+  const canEdit = isAdmin();
+  if (!auditType?.categories?.length) {
+    const empty = document.createElement("p");
+    empty.className = "muted";
+    empty.textContent = "No categories yet. Add one to start building templates.";
+    elements.categoryList.appendChild(empty);
+    return;
+  }
+
+  auditType.categories.forEach((category) => {
+    const row = document.createElement("div");
+    row.className = "task-pool-item";
+    row.innerHTML = `
+      <div class="task-meta">
+        <strong>${formatBilingualText(category.name)}</strong>
+        <small>${category.tasks.length} tasks</small>
+      </div>
+      <button class="secondary">Edit</button>
+    `;
+    const editButton = row.querySelector("button");
+    editButton.disabled = !canEdit;
+    editButton.addEventListener("click", () => {
+      if (!canEdit) return;
+      editingCategoryId = category.id;
+      if (elements.categoryNameInputEn) {
+        elements.categoryNameInputEn.value = getLocalizedValue(category.name, "en");
+      }
+      if (elements.categoryNameInputFr) {
+        elements.categoryNameInputFr.value = getLocalizedValue(category.name, "fr");
+      }
+      if (elements.saveCategoryButton) {
+        elements.saveCategoryButton.textContent = "Update Category";
+      }
+    });
+    elements.categoryList.appendChild(row);
+  });
+}
+
+function resetCategoryForm() {
+  editingCategoryId = "";
+  if (elements.categoryNameInputEn) elements.categoryNameInputEn.value = "";
+  if (elements.categoryNameInputFr) elements.categoryNameInputFr.value = "";
+  if (elements.saveCategoryButton) elements.saveCategoryButton.textContent = "Add Category";
+}
+
+function resetTemplateForm() {
+  editingTemplateRef = null;
+  if (elements.taskTitleInputEn) elements.taskTitleInputEn.value = "";
+  if (elements.taskTitleInputFr) elements.taskTitleInputFr.value = "";
+  if (elements.taskNotesInputEn) elements.taskNotesInputEn.value = "";
+  if (elements.taskNotesInputFr) elements.taskNotesInputFr.value = "";
+  if (elements.taskProofRequiredInput) elements.taskProofRequiredInput.checked = true;
+  if (elements.addTaskButton) elements.addTaskButton.textContent = "Add Task";
+  renderCategoryOptions();
+}
+
+function applyTemplateEditorAccess() {
+  const canEdit = isAdmin();
+  [
+    elements.auditTypeNameInputEn,
+    elements.auditTypeNameInputFr,
+    elements.saveAuditTypeButton,
+    elements.addAuditTypeButton,
+    elements.categoryNameInputEn,
+    elements.categoryNameInputFr,
+    elements.saveCategoryButton,
+    elements.taskTitleInputEn,
+    elements.taskTitleInputFr,
+    elements.taskNotesInputEn,
+    elements.taskNotesInputFr,
+    elements.taskCategorySelect,
+    elements.taskProofRequiredInput,
+    elements.addTaskButton,
+    elements.bulkAddButton,
+  ]
+    .filter(Boolean)
+    .forEach((element) => {
+      element.disabled = !canEdit;
+    });
+
+  if (elements.auditTypeReadonlyNote) {
+    elements.auditTypeReadonlyNote.classList.toggle("hidden", canEdit);
+  }
+}
+
 function renderTaskTemplatePicker() {
   if (!elements.existingTaskCategory || !elements.existingTaskList) return;
   elements.existingTaskCategory.innerHTML = "";
@@ -1017,13 +1214,16 @@ function renderTaskTemplatePicker() {
 
   if (!templates.length) {
     const option = document.createElement("option");
-    option.textContent = "All templates assigned";
+    option.textContent = "No templates available";
     option.value = "";
     elements.existingTaskCategory.appendChild(option);
     elements.existingTaskCategory.disabled = true;
     const empty = document.createElement("p");
     empty.className = "muted";
-    empty.textContent = "All templates are already assigned to this audit.";
+    empty.textContent =
+      audit && getAuditTypeTemplates(audit.auditType, getAuditLanguage(audit)).length
+        ? "All templates are already assigned to this audit."
+        : "No templates are available for this audit type yet.";
     elements.existingTaskList.appendChild(empty);
     return;
   }
@@ -1142,18 +1342,57 @@ function renderAuditTaskSummary() {
 
 function renderTaskPool() {
   elements.taskPoolList.innerHTML = "";
+  const auditType = getSelectedAuditType();
+  const canEdit = isAdmin();
+  if (!auditType) return;
+  if (!auditType.categories.length) {
+    const empty = document.createElement("p");
+    empty.className = "muted";
+    empty.textContent = "No templates yet. Add a category and create your first task template.";
+    elements.taskPoolList.appendChild(empty);
+    return;
+  }
 
-  store.taskTemplates.forEach((template) => {
-    const poolItem = document.createElement("div");
-    poolItem.className = "task-pool-item";
-    poolItem.innerHTML = `
+  auditType.categories.forEach((category) => {
+    const header = document.createElement("div");
+    header.className = "task-pool-item";
+    header.innerHTML = `
       <div class="task-meta">
-        <strong>${template.title}</strong>
-        <small>${template.category}</small>
+        <strong>${formatBilingualText(category.name)}</strong>
+        <small>${category.tasks.length} templates</small>
       </div>
-      <span class="pill">Template</span>
+      <span class="pill">Category</span>
     `;
-    elements.taskPoolList.appendChild(poolItem);
+    elements.taskPoolList.appendChild(header);
+
+    category.tasks.forEach((template) => {
+      const poolItem = document.createElement("div");
+      poolItem.className = "task-pool-item";
+      poolItem.innerHTML = `
+        <div class="task-meta">
+          <strong>${formatBilingualText(template.title)}</strong>
+          <small>${formatBilingualText(category.name)}</small>
+          <small class="muted">${formatBilingualText(template.notes)}</small>
+        </div>
+        <button class="secondary">Edit</button>
+      `;
+      const editButton = poolItem.querySelector("button");
+      editButton.disabled = !canEdit;
+      editButton.addEventListener("click", () => {
+        if (!canEdit) return;
+        editingTemplateRef = { categoryId: category.id, templateId: template.id };
+        if (elements.taskTitleInputEn) elements.taskTitleInputEn.value = getLocalizedValue(template.title, "en");
+        if (elements.taskTitleInputFr) elements.taskTitleInputFr.value = getLocalizedValue(template.title, "fr");
+        if (elements.taskNotesInputEn) elements.taskNotesInputEn.value = getLocalizedValue(template.notes, "en");
+        if (elements.taskNotesInputFr) elements.taskNotesInputFr.value = getLocalizedValue(template.notes, "fr");
+        if (elements.taskProofRequiredInput) {
+          elements.taskProofRequiredInput.checked = template.requiresProof !== false;
+        }
+        if (elements.addTaskButton) elements.addTaskButton.textContent = "Update Task";
+        renderCategoryOptions();
+      });
+      elements.taskPoolList.appendChild(poolItem);
+    });
   });
 }
 
@@ -1451,6 +1690,7 @@ function renderProfiles() {
       renderHomeFilters();
       renderHomeOverview();
       renderHomeAudits();
+      applyTemplateEditorAccess();
     });
 
     elements.profileList.appendChild(card);
@@ -1511,35 +1751,75 @@ function reorderAuditTasks(audit, draggedId, targetId) {
   audit.tasks = tasks;
 }
 
-function createTemplate({ title, category, notes, requiresProof }) {
-  const trimmedTitle = title.trim();
-  if (!trimmedTitle) return null;
-  const id = generateTemplateId();
+function findCategoryById(auditType, categoryId) {
+  if (!auditType) return null;
+  return auditType.categories.find((category) => category.id === categoryId);
+}
+
+function ensureCategory(auditType, nameEn, nameFr) {
+  if (!auditType) return null;
+  const normalizedEn = nameEn.trim().toLowerCase();
+  const normalizedFr = nameFr.trim().toLowerCase();
+  const existing = auditType.categories.find((category) => {
+    const categoryEn = getLocalizedValue(category.name, "en").toLowerCase();
+    const categoryFr = getLocalizedValue(category.name, "fr").toLowerCase();
+    return (normalizedEn && categoryEn === normalizedEn) || (normalizedFr && categoryFr === normalizedFr);
+  });
+  if (existing) return existing;
+  const category = {
+    id: generateAuditCategoryId(),
+    name: {
+      en: nameEn.trim() || nameFr.trim(),
+      fr: nameFr.trim() || nameEn.trim(),
+    },
+    tasks: [],
+  };
+  auditType.categories.push(category);
+  return category;
+}
+
+function createTemplate({ titleEn, titleFr, categoryId, notesEn, notesFr, requiresProof }) {
+  const auditType = getSelectedAuditType();
+  const category = findCategoryById(auditType, categoryId);
+  if (!category) return null;
+  const trimmedTitleEn = titleEn.trim();
+  const trimmedTitleFr = titleFr.trim();
+  if (!trimmedTitleEn && !trimmedTitleFr) return null;
   const template = {
-    id,
-    title: trimmedTitle,
-    category: category.trim() || "General",
-    notes: notes.trim() || "",
+    id: generateTemplateId(),
+    title: {
+      en: trimmedTitleEn || trimmedTitleFr,
+      fr: trimmedTitleFr || trimmedTitleEn,
+    },
+    notes: {
+      en: notesEn.trim(),
+      fr: notesFr.trim(),
+    },
     requiresProof: requiresProof === undefined ? true : requiresProof,
   };
-  store.taskTemplates.push(template);
+  category.tasks.push(template);
   return template;
 }
 
 function assignTemplateToAudit(templateId, audit) {
-  const template = store.taskTemplates.find((entry) => entry.id === templateId);
-  if (!template || !audit) return;
+  if (!audit) return;
+  const entry = getAuditTypeTemplateEntry(audit.auditType, templateId);
+  if (!entry) return;
+  const locale = getAuditLanguage(audit);
+  const templateTitle = getLocalizedValue(entry.template.title, locale);
+  const templateNotes = getLocalizedValue(entry.template.notes, locale);
+  const categoryLabel = getLocalizedValue(entry.category.name, locale);
   const newTask = {
     id: generateAuditTaskId(),
-    templateId: template.id,
-    title: template.title,
-    category: template.category,
+    templateId: entry.template.id,
+    title: templateTitle,
+    category: categoryLabel,
     dueDate: "",
     assignedTo: "",
     assignedUserId: null,
     assignedEmail: "",
-    managerNotes: template.notes || "",
-    requiresProof: template.requiresProof ?? true,
+    managerNotes: templateNotes || "",
+    requiresProof: entry.template.requiresProof ?? true,
     status: TaskStatus.NOT_STARTED,
     submissions: [],
     pendingProof: {
@@ -1675,19 +1955,115 @@ if (elements.existingTaskCategory) {
   });
 }
 
+if (elements.auditTypeLibrarySelect) {
+  elements.auditTypeLibrarySelect.addEventListener("change", (event) => {
+    selectedAuditTypeId = event.target.value;
+    resetCategoryForm();
+    resetTemplateForm();
+    renderAuditTypeLibrary();
+    renderCategoryOptions();
+    renderCategoryList();
+    renderTaskPool();
+  });
+}
+
+if (elements.saveAuditTypeButton) {
+  elements.saveAuditTypeButton.addEventListener("click", () => {
+    const auditType = getSelectedAuditType();
+    if (!auditType) return;
+    auditType.name = {
+      en: elements.auditTypeNameInputEn?.value.trim() || elements.auditTypeNameInputFr?.value.trim() || "",
+      fr: elements.auditTypeNameInputFr?.value.trim() || elements.auditTypeNameInputEn?.value.trim() || "",
+    };
+    renderAuditTypeLibrary();
+    renderAuditTypeSelectOptions();
+  });
+}
+
+if (elements.addAuditTypeButton) {
+  elements.addAuditTypeButton.addEventListener("click", () => {
+    const newType = {
+      id: generateAuditTypeId(),
+      name: {
+        en: "New audit type",
+        fr: "Nouveau type d'audit",
+      },
+      categories: [],
+    };
+    store.auditTypes.push(newType);
+    selectedAuditTypeId = newType.id;
+    renderAuditTypeLibrary();
+    renderAuditTypeSelectOptions();
+    renderCategoryOptions();
+    renderCategoryList();
+    renderTaskPool();
+  });
+}
+
+if (elements.saveCategoryButton) {
+  elements.saveCategoryButton.addEventListener("click", () => {
+    const auditType = getSelectedAuditType();
+    if (!auditType) return;
+    const nameEn = elements.categoryNameInputEn?.value || "";
+    const nameFr = elements.categoryNameInputFr?.value || "";
+    if (!nameEn.trim() && !nameFr.trim()) return;
+    if (editingCategoryId) {
+      const category = findCategoryById(auditType, editingCategoryId);
+      if (!category) return;
+      category.name = {
+        en: nameEn.trim() || nameFr.trim(),
+        fr: nameFr.trim() || nameEn.trim(),
+      };
+      resetCategoryForm();
+    } else {
+      ensureCategory(auditType, nameEn, nameFr);
+      resetCategoryForm();
+    }
+    renderCategoryOptions();
+    renderCategoryList();
+    renderTaskPool();
+  });
+}
+
+if (elements.auditTypeSelect) {
+  elements.auditTypeSelect.addEventListener("change", (event) => {
+    const audit = getSelectedAudit();
+    if (!audit) return;
+    audit.auditType = event.target.value;
+    audit.categoryOptions = getCategoryOptionsForAudit(audit);
+    renderTaskTemplatePicker();
+    renderTaskDetail();
+  });
+}
+
 elements.addTaskButton.addEventListener("click", () => {
-  const title = elements.taskTitleInput.value;
-  const category = elements.taskCategoryInput.value;
-  const notes = elements.taskNotesInput.value;
+  const titleEn = elements.taskTitleInputEn?.value || "";
+  const titleFr = elements.taskTitleInputFr?.value || "";
+  const categoryId = elements.taskCategorySelect?.value || "";
+  const notesEn = elements.taskNotesInputEn?.value || "";
+  const notesFr = elements.taskNotesInputFr?.value || "";
   const requiresProof = elements.taskProofRequiredInput?.checked;
-  const template = createTemplate({ title, category, notes, requiresProof });
-  if (!template) return;
-  elements.taskTitleInput.value = "";
-  elements.taskCategoryInput.value = "";
-  elements.taskNotesInput.value = "";
-  if (elements.taskProofRequiredInput) {
-    elements.taskProofRequiredInput.checked = true;
+  if (editingTemplateRef) {
+    const auditType = getSelectedAuditType();
+    const category = findCategoryById(auditType, categoryId || editingTemplateRef.categoryId);
+    const template = category?.tasks.find((task) => task.id === editingTemplateRef.templateId);
+    if (!category || !template) return;
+    template.title = {
+      en: titleEn.trim() || titleFr.trim(),
+      fr: titleFr.trim() || titleEn.trim(),
+    };
+    template.notes = {
+      en: notesEn.trim(),
+      fr: notesFr.trim(),
+    };
+    template.requiresProof = requiresProof === undefined ? true : requiresProof;
+    editingTemplateRef = null;
+    if (elements.addTaskButton) elements.addTaskButton.textContent = "Add Task";
+  } else {
+    const template = createTemplate({ titleEn, titleFr, categoryId, notesEn, notesFr, requiresProof });
+    if (!template) return;
   }
+  resetTemplateForm();
   renderTaskTemplatePicker();
   renderTaskPool();
 });
@@ -1700,15 +2076,40 @@ if (elements.saveContinueButton) {
 
 elements.bulkAddButton.addEventListener("click", () => {
   const chips = document.querySelectorAll("#screen-create-tasks .chip");
+  const auditType = getSelectedAuditType();
+  if (!auditType) return;
   chips.forEach((chip) => {
-    const title = chip.textContent.trim();
-    const category = chip.dataset.category || "General";
-    const exists = store.taskTemplates.some((template) => template.title === title);
+    const titleEn = chip.dataset.titleEn || chip.textContent.trim();
+    const titleFr = chip.dataset.titleFr || "";
+    const notesEn = chip.dataset.notesEn || "";
+    const notesFr = chip.dataset.notesFr || "";
+    const categoryEn = chip.dataset.categoryEn || chip.dataset.category || "General";
+    const categoryFr = chip.dataset.categoryFr || "";
+    const category = ensureCategory(auditType, categoryEn, categoryFr);
+    if (!category) return;
+    const exists = category.tasks.some(
+      (task) =>
+        getLocalizedValue(task.title, "en").toLowerCase() === titleEn.toLowerCase() ||
+        getLocalizedValue(task.title, "fr").toLowerCase() === titleFr.toLowerCase(),
+    );
     if (!exists) {
-      createTemplate({ title, category, notes: "", requiresProof: true });
+      category.tasks.push({
+        id: generateTemplateId(),
+        title: {
+          en: titleEn,
+          fr: titleFr || titleEn,
+        },
+        notes: {
+          en: notesEn,
+          fr: notesFr || notesEn,
+        },
+        requiresProof: true,
+      });
     }
   });
   renderTaskTemplatePicker();
+  renderCategoryOptions();
+  renderCategoryList();
   renderTaskPool();
 });
 
@@ -1938,6 +2339,7 @@ function init() {
   renderAssigneeDatalist();
   updateNavigationVisibility();
   renderRoleLayout();
+  renderAuditTypeSelectOptions();
   renderAdminFilters();
   renderHomeFilters();
   ensureSelectedAudit();
@@ -1947,6 +2349,7 @@ function init() {
   renderEmailSettingsForm();
   const selectedAudit = getSelectedAudit();
   if (selectedAudit) {
+    selectedAuditTypeId = selectedAudit.auditType || store.auditTypes[0]?.id || "";
     populateCreateAuditForm(selectedAudit);
     renderAuditEmailPreview({
       audit: buildAuditDraftFromForm(selectedAudit),
@@ -1963,11 +2366,15 @@ function init() {
   renderReviewerQueue();
   renderStoreManager();
   renderAuditTaskSummary();
+  renderAuditTypeLibrary();
+  renderCategoryOptions();
+  renderCategoryList();
   renderTaskPool();
   renderAdminOverview();
   renderHomeOverview();
   renderHomeAudits();
   renderProfiles();
+  applyTemplateEditorAccess();
 }
 
 init();
