@@ -8,6 +8,7 @@ Key files
 - `index.html`: Main page markup and app container.
 - `styles.css`: Global styles and layout for the UI.
 - `app.js`: Client-side behavior and demo data handling.
+- `store-manager-test.html`: Store manager workspace with a preloaded admin-linked test profile.
 - `build-package.md`: Packaging/build notes for distributing the static app.
 
 Tests and fixtures
