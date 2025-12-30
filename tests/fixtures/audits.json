@@ -1,0 +1,67 @@
+{
+  "audits": [
+    {
+      "id": "AUD-TEST-001",
+      "storeCode": "NY-001",
+      "storeName": "NYC Flagship",
+      "createdAt": "2025-03-10",
+      "ownerId": "usr-qa1",
+      "language": "en",
+      "reminderCadenceDays": 7,
+      "escalationRules": {
+        "reminderRecipients": ["store-manager", "regional-manager"],
+        "deadlineRecipients": ["store-manager", "regional-manager", "director"]
+      },
+      "categoryOptions": ["Store Appearance", "Loss Prevention", "QPU", "Safety"],
+      "tasks": [
+        {
+          "id": "AT-TEST-1001",
+          "templateId": "TPL-TEST-9001",
+          "title": "Emergency exit signage",
+          "category": "Safety",
+          "dueDate": "2025-03-20",
+          "assignedTo": "Alex Rivera",
+          "assignedUserId": "usr-sm-qa",
+          "assignedEmail": "alex.rivera@example.com",
+          "managerNotes": "Ensure signage is visible from the sales floor.",
+          "requiresProof": true,
+          "status": "NOT_STARTED",
+          "submissions": [],
+          "pendingProof": {
+            "notes": "",
+            "photos": []
+          },
+          "reviewerNotes": ""
+        },
+        {
+          "id": "AT-TEST-1002",
+          "templateId": "TPL-TEST-9002",
+          "title": "Stock room labeling",
+          "category": "Store Appearance",
+          "dueDate": "2025-03-22",
+          "assignedTo": "Alex Rivera",
+          "assignedUserId": "usr-sm-qa",
+          "assignedEmail": "alex.rivera@example.com",
+          "managerNotes": "Label seasonal bays and overstock shelving.",
+          "requiresProof": true,
+          "status": "PROOF_SUBMITTED",
+          "submissions": [
+            {
+              "id": "SUB-TEST-01",
+              "submittedAt": "2025-03-12T14:35:00Z",
+              "status": "PROOF_SUBMITTED",
+              "notes": "Labels refreshed with new SKU numbers.",
+              "photos": ["label-aisle-1.jpg", "label-aisle-2.jpg"],
+              "reviewerNotes": ""
+            }
+          ],
+          "pendingProof": {
+            "notes": "",
+            "photos": []
+          },
+          "reviewerNotes": ""
+        }
+      ]
+    }
+  ]
+}
