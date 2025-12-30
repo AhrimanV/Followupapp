@@ -224,10 +224,12 @@ const elements = {
   taskDetailModal: document.getElementById("screen-task-detail"),
   taskDetailBackdrop: document.getElementById("task-detail-backdrop"),
   taskDetailCloseButton: document.getElementById("close-task-detail"),
+  taskDetailDialog: document.querySelector("#screen-task-detail .modal-content"),
 };
 
 let selectedTemplateCategory = "";
 let selectedAuditTypeId = "";
+let lastFocusedElement = null;
 let editingCategoryId = "";
 let editingTemplateRef = null;
 
@@ -1390,12 +1392,34 @@ function openTaskDetailModal(taskId) {
   if (!elements.taskDetailModal) return;
   elements.taskDetailModal.classList.remove("hidden");
   document.body.classList.add("modal-open");
+  lastFocusedElement = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+  const focusTarget =
+    elements.taskDetailCloseButton ||
+    elements.taskDetailDialog?.querySelector(
+      'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+    );
+  if (focusTarget instanceof HTMLElement) {
+    focusTarget.focus();
+  }
 }
 
 function closeTaskDetailModal() {
   if (!elements.taskDetailModal) return;
   elements.taskDetailModal.classList.add("hidden");
   document.body.classList.remove("modal-open");
+  if (lastFocusedElement && document.body.contains(lastFocusedElement)) {
+    lastFocusedElement.focus();
+  }
+  lastFocusedElement = null;
+}
+
+function getTaskDetailFocusableElements() {
+  if (!elements.taskDetailDialog) return [];
+  return Array.from(
+    elements.taskDetailDialog.querySelectorAll(
+      'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+    ),
+  ).filter((node) => node.offsetParent !== null);
 }
 
 function removeTaskFromAudit(taskId) {
@@ -2211,8 +2235,23 @@ if (elements.taskDetailBackdrop) {
 }
 
 document.addEventListener("keydown", (event) => {
-  if (event.key === "Escape" && !elements.taskDetailModal?.classList.contains("hidden")) {
+  if (elements.taskDetailModal?.classList.contains("hidden")) return;
+  if (event.key === "Escape") {
     closeTaskDetailModal();
+    return;
+  }
+  if (event.key !== "Tab") return;
+  const focusable = getTaskDetailFocusableElements();
+  if (!focusable.length) return;
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  const active = document.activeElement;
+  if (event.shiftKey && active === first) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && active === last) {
+    event.preventDefault();
+    first.focus();
   }
 });
 
