@@ -135,6 +135,10 @@
                 <input id="audit-deadline-input" type="date" value="2025-03-08" />
               </label>
               <label class="field">
+                Reminder cadence (days before deadline)
+                <input id="audit-reminder-input" type="number" min="0" value="7" />
+              </label>
+              <label class="field">
                 Language
                 <select id="audit-language-select">
                   <option value="en">English</option>
@@ -170,6 +174,10 @@
             <div class="section">
               <h4>Send activity</h4>
               <div id="audit-email-send-log" class="stack muted">No audit emails sent yet.</div>
+            </div>
+            <div class="section">
+              <h4>Notification activity</h4>
+              <div id="audit-notification-log" class="stack muted">No notifications dispatched yet.</div>
             </div>
           </div>
           <div class="card">
