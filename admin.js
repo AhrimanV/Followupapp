@@ -87,6 +87,7 @@ const elements = {
   rosAdminApp: document.querySelector(".app--ros-admin"),
   storeManagerApp: document.querySelector(".app--store-manager"),
   taskListRows: document.getElementById("task-list-rows"),
+  taskListAuditorFilter: document.getElementById("task-list-auditor-filter"),
   taskTitle: document.getElementById("detail-task-title"),
   taskCategory: document.getElementById("detail-task-category"),
   taskAudit: document.getElementById("detail-task-audit"),
@@ -835,8 +836,12 @@ function renderTaskList() {
   elements.taskListRows.innerHTML = "";
   const audit = getSelectedAudit();
   const tasks = getVisibleTasksForAudit(audit);
+  const auditorFilter = elements.taskListAuditorFilter?.value || "all";
+  const auditOwner = audit ? getUserById(audit.ownerId) : null;
+  const filteredTasks =
+    auditorFilter === "all" || (auditOwner && auditOwner.id === auditorFilter) ? tasks : [];
 
-  if (!tasks.length) {
+  if (!filteredTasks.length) {
     const emptyRow = document.createElement("div");
     emptyRow.className = "table-row";
     emptyRow.innerHTML = "<span>No tasks assigned.</span>";
@@ -848,7 +853,7 @@ function renderTaskList() {
     return;
   }
 
-  tasks.forEach((task) => {
+  filteredTasks.forEach((task) => {
     const row = document.createElement("div");
     row.className = "table-row clickable";
     row.innerHTML = `
@@ -869,6 +874,31 @@ function renderTaskList() {
   renderSidebarMetrics();
   renderHomeOverview();
   renderHomeAudits();
+}
+
+function renderTaskListAuditorFilter() {
+  if (!elements.taskListAuditorFilter) return;
+  const currentAuditor = elements.taskListAuditorFilter.value || "all";
+  elements.taskListAuditorFilter.innerHTML = "";
+
+  const allOption = document.createElement("option");
+  allOption.value = "all";
+  allOption.textContent = "All";
+  elements.taskListAuditorFilter.appendChild(allOption);
+
+  const auditorIds = new Set();
+  users
+    .filter((user) => user.role === "auditor")
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .forEach((auditor) => {
+      const option = document.createElement("option");
+      option.value = auditor.id;
+      option.textContent = auditor.name;
+      elements.taskListAuditorFilter.appendChild(option);
+      auditorIds.add(auditor.id);
+    });
+
+  elements.taskListAuditorFilter.value = auditorIds.has(currentAuditor) ? currentAuditor : "all";
 }
 
 function clampTaskDueDate(value, auditDeadline) {
@@ -2325,6 +2355,10 @@ if (elements.auditStoreCodeInput) {
     filter.addEventListener("change", renderHomeAudits);
   });
 
+if (elements.taskListAuditorFilter) {
+  elements.taskListAuditorFilter.addEventListener("change", renderTaskList);
+}
+
 function syncSelectedTask() {
   if (!state.selectedTaskId) return;
   const taskEntry = getTaskEntry(state.selectedTaskId);
@@ -2342,6 +2376,7 @@ function init() {
   renderAuditTypeSelectOptions();
   renderAdminFilters();
   renderHomeFilters();
+  renderTaskListAuditorFilter();
   ensureSelectedAudit();
   renderSidebarFooter();
   renderSidebarMetrics();

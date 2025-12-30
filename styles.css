@@ -469,6 +469,27 @@ button.full {
   gap: 12px;
 }
 
+.table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.table-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.table-header .table-filter {
+  margin-bottom: 0;
+  min-width: 180px;
+}
+
 .table-row {
   display: grid;
   grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
