@@ -711,6 +711,18 @@ export function getAuditCompletionStatus(audit) {
   return completed ? "Complete" : "Open";
 }
 
+export function getSidebarMetrics() {
+  const openAudits = store.audits.filter((audit) => getAuditCompletionStatus(audit) === "Open")
+    .length;
+  const tasksAwaitingApproval = store.audits
+    .flatMap((audit) => audit.tasks)
+    .filter((task) => task.status === TaskStatus.PROOF_SUBMITTED).length;
+  return {
+    openAudits,
+    tasksAwaitingApproval,
+  };
+}
+
 export function getRoleBadgeClass(role) {
   if (role === "admin") return "badge dark";
   if (role === "auditor") return "badge info";

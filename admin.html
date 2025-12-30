@@ -26,9 +26,10 @@
           <button class="nav-item" data-screen="store-manager">Store Manager</button>
           <button class="nav-item admin-only" data-screen="admin">Admin Panel</button>
         </nav>
-        <div class="sidebar-footer">
-          <p>Store Code: <strong>ON-204</strong></p>
-          <p>Status: <span class="status-pill">Open</span></p>
+        <div class="sidebar-metrics" id="sidebar-metrics"></div>
+        <div class="sidebar-footer hidden" id="sidebar-footer">
+          <p>Store Code: <strong id="sidebar-store-code">--</strong></p>
+          <p>Status: <span class="status-pill" id="sidebar-audit-status">Open</span></p>
         </div>
       </aside>
       <main class="main">

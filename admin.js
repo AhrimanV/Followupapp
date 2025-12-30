@@ -18,6 +18,7 @@ import {
   getLatestPendingSubmission,
   getRoleBadgeClass,
   getRoleLabel,
+  getSidebarMetrics,
   getSelectedAudit,
   getStatusBadgeClass,
   getTaskEntry,
@@ -124,6 +125,10 @@ const elements = {
   adminAuditRows: document.getElementById("admin-audit-rows"),
   profileList: document.getElementById("profile-list"),
   assigneeList: document.getElementById("assignee-list"),
+  sidebarMetrics: document.getElementById("sidebar-metrics"),
+  sidebarFooter: document.getElementById("sidebar-footer"),
+  sidebarStoreCode: document.getElementById("sidebar-store-code"),
+  sidebarAuditStatus: document.getElementById("sidebar-audit-status"),
   saveContinueButton: document.getElementById("save-continue-button"),
   auditIdInput: document.getElementById("audit-id-input"),
   auditDateInput: document.getElementById("audit-date-input"),
@@ -165,6 +170,8 @@ function renderStoreManager() {
       renderTaskDetail();
     },
   });
+  renderSidebarFooter();
+  renderSidebarMetrics();
 }
 
 function formatCsvValue(value) {
@@ -233,6 +240,28 @@ function renderAssigneeDatalist() {
     option.textContent = `${contact.displayName} (${contact.email})`;
     elements.assigneeList.appendChild(option);
   });
+}
+
+function renderSidebarFooter() {
+  if (!elements.sidebarFooter) return;
+  const audit = getSelectedAudit();
+  elements.sidebarFooter.classList.toggle("hidden", !audit);
+  if (!audit) return;
+  if (elements.sidebarStoreCode) {
+    elements.sidebarStoreCode.textContent = audit.storeCode || audit.id || "--";
+  }
+  if (elements.sidebarAuditStatus) {
+    elements.sidebarAuditStatus.textContent = getAuditCompletionStatus(audit);
+  }
+}
+
+function renderSidebarMetrics() {
+  if (!elements.sidebarMetrics) return;
+  const metrics = getSidebarMetrics();
+  elements.sidebarMetrics.innerHTML = `
+    <div class="metric"><span>Open audits</span><strong>${metrics.openAudits}</strong></div>
+    <div class="metric"><span>Tasks awaiting approval</span><strong>${metrics.tasksAwaitingApproval}</strong></div>
+  `;
 }
 
 function buildAuditDraftFromForm(audit) {
@@ -520,6 +549,8 @@ function renderTaskList() {
     emptyRow.className = "table-row";
     emptyRow.innerHTML = "<span>No tasks assigned.</span>";
     elements.taskListRows.appendChild(emptyRow);
+    renderSidebarFooter();
+    renderSidebarMetrics();
     return;
   }
 
@@ -540,6 +571,8 @@ function renderTaskList() {
     });
     elements.taskListRows.appendChild(row);
   });
+  renderSidebarFooter();
+  renderSidebarMetrics();
 }
 
 function renderTaskDetail() {
@@ -565,6 +598,8 @@ function renderTaskDetail() {
     elements.approveButton.disabled = true;
     elements.submitProof.disabled = true;
     elements.uploadProof.disabled = true;
+    renderSidebarFooter();
+    renderSidebarMetrics();
     return;
   }
   const { audit, task } = taskEntry;
@@ -600,6 +635,8 @@ function renderTaskDetail() {
 
   elements.reviewerFeedback.classList.toggle("hidden", task.status !== TaskStatus.REJECTED);
   elements.reviewerFeedback.textContent = task.reviewerNotes || "No reviewer feedback.";
+  renderSidebarFooter();
+  renderSidebarMetrics();
 }
 
 function renderReviewerQueue() {
@@ -648,6 +685,8 @@ function renderReviewerQueue() {
     emptyState.textContent = "No proof submissions ready for review.";
     elements.reviewerQueueList.appendChild(emptyState);
   }
+  renderSidebarFooter();
+  renderSidebarMetrics();
 }
 
 function renderExistingTaskOptions() {
@@ -682,6 +721,7 @@ function renderAuditTaskSummary() {
     empty.className = "muted";
     empty.textContent = "No tasks assigned yet.";
     elements.auditTaskSummary.appendChild(empty);
+    renderSidebarMetrics();
     return;
   }
 
@@ -815,6 +855,7 @@ function renderAuditTaskSummary() {
 
     elements.auditTaskSummary.appendChild(item);
   });
+  renderSidebarMetrics();
 }
 
 function renderTaskPool() {
@@ -1345,6 +1386,8 @@ function init() {
   renderRoleLayout();
   renderAdminFilters();
   ensureSelectedAudit();
+  renderSidebarFooter();
+  renderSidebarMetrics();
   syncSelectedTask();
   const selectedAudit = getSelectedAudit();
   if (selectedAudit) {
