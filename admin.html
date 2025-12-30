@@ -432,6 +432,7 @@
                 <div class="pill-group">
                   <button class="secondary" id="add-audit-type-button">Add new audit type</button>
                   <button class="primary" id="save-audit-type-button">Save audit type</button>
+                  <button class="secondary" id="delete-audit-type-button">Delete audit type</button>
                 </div>
               </label>
             </div>
@@ -499,46 +500,17 @@
               <button class="primary full" id="add-task-button">Add Task</button>
             </div>
             <div class="card">
-              <h3>Suggested Templates</h3>
-              <div class="chip-list">
-                <span
-                  class="chip"
-                  data-category="Loss Prevention"
-                  data-category-en="Loss Prevention"
-                  data-category-fr="Prévention des pertes"
-                  data-title-en="Emergency exit signage"
-                  data-title-fr="Signalisation des sorties de secours"
-                  data-notes-en="Ensure all emergency exits have clear signage and no obstructions."
-                  data-notes-fr="Assurez-vous que toutes les sorties de secours ont une signalisation claire et sans obstruction."
-                >
-                  Emergency exit signage
-                </span>
-                <span
-                  class="chip"
-                  data-category="Store Appearance"
-                  data-category-en="Store Appearance"
-                  data-category-fr="Apparence du magasin"
-                  data-title-en="Stock room labeling"
-                  data-title-fr="Étiquetage de la réserve"
-                  data-notes-en="Label aisles, bays, and supply zones with updated signage."
-                  data-notes-fr="Étiquetez les allées, baies et zones de stock avec une signalisation à jour."
-                >
-                  Stock room labeling
-                </span>
-                <span
-                  class="chip"
-                  data-category="Safety"
-                  data-category-en="Safety"
-                  data-category-fr="Sécurité"
-                  data-title-en="Fire extinguisher inspection"
-                  data-title-fr="Inspection des extincteurs"
-                  data-notes-en="Verify inspection tags, pressure gauges, and access paths."
-                  data-notes-fr="Vérifiez les étiquettes d'inspection, les manomètres et les accès."
-                >
-                  Fire extinguisher inspection
-                </span>
-              </div>
-              <button class="secondary full" id="bulk-add-button">Bulk Add (3)</button>
+              <h3>Copy from another audit</h3>
+              <p class="muted">Pull templates from another audit type library into the current one.</p>
+              <label class="field">
+                Audit type library
+                <select id="copy-audit-type-select"></select>
+              </label>
+              <label class="field">
+                Category
+                <select id="copy-category-select"></select>
+              </label>
+              <button class="secondary full" id="copy-category-button">Copy templates</button>
             </div>
             <div class="card">
               <h3>Template Library</h3>
