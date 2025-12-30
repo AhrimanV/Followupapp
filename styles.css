@@ -150,20 +150,6 @@ body {
   padding: 24px 36px 40px;
 }
 
-.store-manager-banner {
-  background: #f0f9ff;
-  border-radius: 12px;
-  padding: 8px 12px;
-  margin-bottom: 16px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #075985;
-}
-
-.store-manager-banner .muted {
-  color: #64748b;
-  font-size: 0.8rem;
-}
 
 .topbar {
   display: flex;
@@ -214,32 +200,6 @@ button.secondary {
 
 button.full {
   width: 100%;
-}
-
-.view-as {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.85rem;
-  color: #6b7280;
-}
-
-.view-as select {
-  border-radius: 10px;
-  border: 1px solid #e5e7eb;
-  padding: 8px 10px;
-  font-size: 0.9rem;
-  background: #fff;
-}
-
-.view-banner {
-  background: #eff6ff;
-  color: #1d4ed8;
-  border-radius: 12px;
-  padding: 10px 14px;
-  margin: -8px 0 18px;
-  font-size: 0.9rem;
-  font-weight: 600;
 }
 
 .grid {

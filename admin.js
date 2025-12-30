@@ -13,7 +13,7 @@ import {
   generateAuditEmailTemplate,
   getAccessibleAudits,
   getAuditCompletionStatus,
-  getEffectiveUser,
+  getActiveUser,
   getAuditLanguage,
   getLatestPendingSubmission,
   getRoleBadgeClass,
@@ -26,7 +26,6 @@ import {
   getUserById,
   getVisibleTasksForAudit,
   isAdmin,
-  isViewingAsUser,
   logAuditEmailSend,
   renderStoreManagerView,
   syncStoreManagerLocaleFromAudit,
@@ -112,12 +111,9 @@ const elements = {
   taskAssignee: document.getElementById("detail-task-assignee"),
   taskAssigneeEmail: document.getElementById("detail-task-email"),
   taskProofRequired: document.getElementById("detail-task-proof"),
-  viewAsSelect: document.getElementById("view-as-select"),
-  viewAsBanner: document.getElementById("view-as-banner"),
   generateReportButton: document.getElementById("generate-report-button"),
   storeManagerTitle: document.getElementById("store-manager-title"),
   storeManagerSubtitle: document.getElementById("store-manager-subtitle"),
-  storeManagerBanner: document.getElementById("store-manager-banner"),
   storeManagerLocaleSelect: document.getElementById("store-manager-locale"),
   storeManagerLanguageLabel: document.getElementById("store-manager-language-label"),
   adminFilterAuditor: document.getElementById("admin-filter-auditor"),
@@ -128,7 +124,6 @@ const elements = {
   adminAuditRows: document.getElementById("admin-audit-rows"),
   profileList: document.getElementById("profile-list"),
   assigneeList: document.getElementById("assignee-list"),
-  exitViewAsButton: document.getElementById("exit-view-as"),
   saveContinueButton: document.getElementById("save-continue-button"),
   auditIdInput: document.getElementById("audit-id-input"),
   auditDateInput: document.getElementById("audit-date-input"),
@@ -147,7 +142,6 @@ const elements = {
 };
 
 const storeManagerElements = {
-  storeManagerBanner: elements.storeManagerBanner,
   storeManagerTitle: elements.storeManagerTitle,
   storeManagerSubtitle: elements.storeManagerSubtitle,
   storeManagerLanguageLabel: elements.storeManagerLanguageLabel,
@@ -892,7 +886,7 @@ function renderAdminOverview() {
 
 function renderProfiles() {
   elements.profileList.innerHTML = "";
-  const canEditRoles = isAdmin() && !isViewingAsUser();
+  const canEditRoles = isAdmin();
 
   users.forEach((user) => {
     const card = document.createElement("div");
@@ -919,9 +913,7 @@ function renderProfiles() {
     card.querySelector("select").addEventListener("change", (event) => {
       user.role = event.target.value;
       renderProfiles();
-      renderViewAsOptions();
       updateNavigationVisibility();
-      updateStoreManagerViewControls();
       renderRoleLayout();
     });
 
@@ -929,76 +921,8 @@ function renderProfiles() {
   });
 }
 
-function renderViewAsOptions() {
-  elements.viewAsSelect.innerHTML = "";
-  if (!isAdmin()) {
-    return;
-  }
-
-  const adminOption = document.createElement("option");
-  adminOption.value = "";
-  adminOption.textContent = "Admin (full access)";
-  elements.viewAsSelect.appendChild(adminOption);
-
-  const roleGroups = {
-    auditor: {
-      label: "ROS Auditors",
-      users: [],
-    },
-    "store-manager": {
-      label: "Store Managers",
-      users: [],
-    },
-  };
-
-  users
-    .filter((user) => user.role !== "admin")
-    .forEach((user) => {
-      if (roleGroups[user.role]) {
-        roleGroups[user.role].users.push(user);
-      }
-    });
-
-  Object.values(roleGroups).forEach((group) => {
-    if (!group.users.length) return;
-    const optgroup = document.createElement("optgroup");
-    optgroup.label = group.label;
-    group.users.forEach((user) => {
-      const option = document.createElement("option");
-      option.value = user.id;
-      option.textContent = `${user.name} · ${getRoleLabel(user.role)} · ${user.region}`;
-      optgroup.appendChild(option);
-    });
-    elements.viewAsSelect.appendChild(optgroup);
-  });
-
-  elements.viewAsSelect.value = state.viewAsUserId || "";
-}
-
-function updateViewAsBanner() {
-  if (isViewingAsUser()) {
-    const user = getEffectiveUser();
-    const roleLabel = user.role === "auditor" ? "ROS Auditor" : getRoleLabel(user.role);
-    elements.viewAsBanner.innerHTML = `
-      Viewing as ${user.name}
-      <span class="role-pill ${user.role}">${roleLabel}</span>
-      <span class="muted">· Navigation and tasks reflect this perspective.</span>
-    `;
-    elements.viewAsBanner.classList.remove("hidden");
-  } else {
-    elements.viewAsBanner.textContent = "";
-    elements.viewAsBanner.classList.add("hidden");
-  }
-}
-
-function updateStoreManagerViewControls() {
-  if (!elements.exitViewAsButton) return;
-  const shouldShow = isAdmin() && isViewingAsUser();
-  elements.exitViewAsButton.classList.toggle("hidden", !shouldShow);
-}
-
 function renderRoleLayout() {
-  const user = getEffectiveUser();
+  const user = getActiveUser();
   const showStoreManager = user?.role === "store-manager";
   if (elements.rosAdminApp) {
     elements.rosAdminApp.classList.toggle("hidden", showStoreManager);
@@ -1009,7 +933,7 @@ function renderRoleLayout() {
 }
 
 function updateNavigationVisibility() {
-  const user = getEffectiveUser();
+  const user = getActiveUser();
   if (!user) return;
   renderRoleLayout();
   const navMap = {
@@ -1020,7 +944,7 @@ function updateNavigationVisibility() {
     "task-detail": user.role !== "store-manager",
     "reviewer-queue": user.role !== "store-manager",
     "store-manager": user.role === "store-manager",
-    admin: user.role === "admin" && !isViewingAsUser(),
+    admin: user.role === "admin",
   };
 
   navButtons.forEach((button) => {
@@ -1030,7 +954,7 @@ function updateNavigationVisibility() {
   });
 
   document.querySelectorAll(".admin-only").forEach((node) => {
-    node.classList.toggle("hidden", !isAdmin() || isViewingAsUser());
+    node.classList.toggle("hidden", !isAdmin());
   });
 
   const activeButton = navButtons.find((button) => button.classList.contains("active"));
@@ -1039,22 +963,6 @@ function updateNavigationVisibility() {
     const fallbackScreen = user.role === "store-manager" ? "store-manager" : "home";
     switchScreen(fallbackScreen);
   }
-}
-
-function applyViewAsChange(userId) {
-  state.viewAsUserId = userId || null;
-  ensureSelectedAudit();
-  updateNavigationVisibility();
-  updateViewAsBanner();
-  updateStoreManagerViewControls();
-  renderRoleLayout();
-  renderTaskList();
-  renderTaskDetail();
-  renderReviewerQueue();
-  renderStoreManager();
-  renderAuditTaskSummary();
-  renderExistingTaskOptions();
-  renderAdminOverview();
 }
 
 function reorderAuditTasks(audit, draggedId, targetId) {
@@ -1278,24 +1186,10 @@ elements.managerNotes.addEventListener("input", (event) => {
   renderStoreManager();
 });
 
-elements.viewAsSelect.addEventListener("change", (event) => {
-  if (!isAdmin()) return;
-  applyViewAsChange(event.target.value);
-});
-
 if (elements.generateReportButton) {
   elements.generateReportButton.addEventListener("click", () => {
-    if (!isAdmin() || isViewingAsUser()) return;
+    if (!isAdmin()) return;
     downloadAuditReport();
-  });
-}
-
-if (elements.exitViewAsButton) {
-  elements.exitViewAsButton.addEventListener("click", () => {
-    applyViewAsChange(null);
-    if (elements.viewAsSelect) {
-      elements.viewAsSelect.value = "";
-    }
   });
 }
 
@@ -1346,10 +1240,7 @@ function syncSelectedTask() {
 
 function init() {
   renderAssigneeDatalist();
-  renderViewAsOptions();
   updateNavigationVisibility();
-  updateViewAsBanner();
-  updateStoreManagerViewControls();
   renderRoleLayout();
   renderAdminFilters();
   ensureSelectedAudit();

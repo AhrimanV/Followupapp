@@ -9,7 +9,6 @@ import {
 const elements = {
   storeManagerTitle: document.getElementById("store-manager-title"),
   storeManagerSubtitle: document.getElementById("store-manager-subtitle"),
-  storeManagerBanner: document.getElementById("store-manager-banner"),
   storeManagerAuditLabel: document.getElementById("store-manager-audit-label"),
   storeManagerAuditSelect: document.getElementById("store-manager-audit-select"),
   storeManagerLocaleSelect: document.getElementById("store-manager-locale"),
@@ -65,7 +64,6 @@ if (elements.storeManagerLocaleSelect) {
 
 function init() {
   state.activeUserId = "usr-sm1";
-  state.viewAsUserId = null;
   state.storeManagerLocaleOverride = false;
   ensureSelectedAudit();
   renderStoreManager();
