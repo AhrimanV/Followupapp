@@ -806,7 +806,10 @@ export function getVisibleTasksForAudit(audit) {
   const user = getActiveUser();
   if (!user || !audit) return [];
   if (user.role === "store-manager") {
-    return audit.tasks.filter((task) => task.assignedTo === user.name || task.assignedEmail === user.email);
+    return audit.tasks.filter(
+      (task) =>
+        task.assignedUserId === user.id || task.assignedTo === user.name || task.assignedEmail === user.email,
+    );
   }
   return getTasksForAudit(audit);
 }
@@ -1118,10 +1121,16 @@ export function renderStoreManagerView(elements, { onTaskUpdated } = {}) {
     return;
   }
 
-  const auditTasks = getTasksForAudit(audit);
-  const managerTasks = managerName
-    ? auditTasks.filter((task) => task.assignedTo === managerName)
-    : [];
+  const auditTasks = getVisibleTasksForAudit(audit);
+  const managerTasks =
+    user?.role === "store-manager"
+      ? auditTasks.filter(
+          (task) =>
+            task.assignedUserId === user.id ||
+            task.assignedEmail === user.email ||
+            task.assignedTo === user.name,
+        )
+      : [];
   const dueWindow = formatDateRange(managerTasks.map((task) => task.dueDate));
 
   if (elements.managerAuditHeader) {
