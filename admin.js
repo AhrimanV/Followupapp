@@ -13,6 +13,7 @@ import {
   generateAuditEmailTemplate,
   getAccessibleAudits,
   getAuditCompletionStatus,
+  isTaskOverdue,
   getActiveUser,
   getAuditLanguage,
   getLatestPendingSubmission,
@@ -123,6 +124,15 @@ const elements = {
   adminFilterStart: document.getElementById("admin-filter-start"),
   adminFilterEnd: document.getElementById("admin-filter-end"),
   adminAuditRows: document.getElementById("admin-audit-rows"),
+  homeOpenAudits: document.getElementById("home-open-audits"),
+  homeOverdueAudits: document.getElementById("home-overdue-audits"),
+  homeAwaitingApproval: document.getElementById("home-awaiting-approval"),
+  homeFilterStatus: document.getElementById("home-filter-status"),
+  homeFilterOwner: document.getElementById("home-filter-owner"),
+  homeFilterStore: document.getElementById("home-filter-store"),
+  homeFilterStart: document.getElementById("home-filter-start"),
+  homeFilterEnd: document.getElementById("home-filter-end"),
+  homeAuditRows: document.getElementById("home-audit-rows"),
   profileList: document.getElementById("profile-list"),
   assigneeList: document.getElementById("assignee-list"),
   sidebarMetrics: document.getElementById("sidebar-metrics"),
@@ -551,6 +561,8 @@ function renderTaskList() {
     elements.taskListRows.appendChild(emptyRow);
     renderSidebarFooter();
     renderSidebarMetrics();
+    renderHomeOverview();
+    renderHomeAudits();
     return;
   }
 
@@ -573,6 +585,8 @@ function renderTaskList() {
   });
   renderSidebarFooter();
   renderSidebarMetrics();
+  renderHomeOverview();
+  renderHomeAudits();
 }
 
 function renderTaskDetail() {
@@ -875,6 +889,165 @@ function renderTaskPool() {
   });
 }
 
+function isAuditOverdue(audit) {
+  if (!audit?.tasks?.length) return false;
+  return audit.tasks.some((task) => isTaskOverdue(task));
+}
+
+function renderHomeOverview() {
+  if (!elements.homeOpenAudits || !elements.homeOverdueAudits || !elements.homeAwaitingApproval) return;
+  const accessibleAudits = getAccessibleAudits();
+  const openAudits = accessibleAudits.filter((audit) => getAuditCompletionStatus(audit) === "Open").length;
+  const overdueAudits = accessibleAudits.filter((audit) => isAuditOverdue(audit)).length;
+  const awaitingApproval = accessibleAudits
+    .flatMap((audit) => audit.tasks)
+    .filter((task) => task.status === TaskStatus.PROOF_SUBMITTED).length;
+
+  elements.homeOpenAudits.textContent = openAudits;
+  elements.homeOverdueAudits.textContent = overdueAudits;
+  elements.homeAwaitingApproval.textContent = awaitingApproval;
+}
+
+function renderHomeFilters() {
+  if (!elements.homeFilterOwner || !elements.homeFilterStore) return;
+  const accessibleAudits = getAccessibleAudits();
+  const currentOwner = elements.homeFilterOwner.value || "all";
+  const currentStore = elements.homeFilterStore.value || "all";
+
+  elements.homeFilterOwner.innerHTML = "";
+  const ownerAllOption = document.createElement("option");
+  ownerAllOption.value = "all";
+  ownerAllOption.textContent = "All";
+  elements.homeFilterOwner.appendChild(ownerAllOption);
+
+  const ownerMap = new Map();
+  accessibleAudits.forEach((audit) => {
+    const owner = getUserById(audit.ownerId);
+    if (owner) {
+      ownerMap.set(owner.id, owner.name);
+    }
+  });
+
+  [...ownerMap.entries()]
+    .sort((a, b) => a[1].localeCompare(b[1]))
+    .forEach(([id, name]) => {
+      const option = document.createElement("option");
+      option.value = id;
+      option.textContent = name;
+      elements.homeFilterOwner.appendChild(option);
+    });
+
+  elements.homeFilterOwner.value = ownerMap.has(currentOwner) ? currentOwner : "all";
+
+  elements.homeFilterStore.innerHTML = "";
+  const storeAllOption = document.createElement("option");
+  storeAllOption.value = "all";
+  storeAllOption.textContent = "All";
+  elements.homeFilterStore.appendChild(storeAllOption);
+
+  const storeMap = new Map();
+  accessibleAudits.forEach((audit) => {
+    storeMap.set(audit.storeCode, audit.storeName);
+  });
+
+  [...storeMap.entries()]
+    .sort((a, b) => a[1].localeCompare(b[1]))
+    .forEach(([code, name]) => {
+      const option = document.createElement("option");
+      option.value = code;
+      option.textContent = `${name} (${code})`;
+      elements.homeFilterStore.appendChild(option);
+    });
+
+  elements.homeFilterStore.value = storeMap.has(currentStore) ? currentStore : "all";
+}
+
+function filterAuditsForHome() {
+  const statusFilter = elements.homeFilterStatus?.value || "all";
+  const ownerFilter = elements.homeFilterOwner?.value || "all";
+  const storeFilter = elements.homeFilterStore?.value || "all";
+  const startDate = elements.homeFilterStart?.value;
+  const endDate = elements.homeFilterEnd?.value;
+  const endDateValue = endDate ? new Date(`${endDate}T23:59:59`) : null;
+
+  return getAccessibleAudits().filter((audit) => {
+    const status = getAuditCompletionStatus(audit).toLowerCase();
+    const overdue = isAuditOverdue(audit);
+    const createdAt = new Date(audit.createdAt);
+
+    if (ownerFilter !== "all" && audit.ownerId !== ownerFilter) {
+      return false;
+    }
+    if (storeFilter !== "all" && audit.storeCode !== storeFilter) {
+      return false;
+    }
+    if (statusFilter === "open" && status !== "open") {
+      return false;
+    }
+    if (statusFilter === "completed" && status !== "complete") {
+      return false;
+    }
+    if (statusFilter === "overdue" && !overdue) {
+      return false;
+    }
+    if (startDate && createdAt < new Date(startDate)) {
+      return false;
+    }
+    if (endDateValue && createdAt > endDateValue) {
+      return false;
+    }
+    return true;
+  });
+}
+
+function renderHomeAudits() {
+  if (!elements.homeAuditRows) return;
+  elements.homeAuditRows.innerHTML = "";
+  const filteredAudits = filterAuditsForHome();
+
+  if (!filteredAudits.length) {
+    const emptyRow = document.createElement("div");
+    emptyRow.className = "table-row";
+    emptyRow.innerHTML = `
+      <span>No audits match the filters.</span>
+      <span></span>
+      <span></span>
+      <span></span>
+      <span></span>
+    `;
+    elements.homeAuditRows.appendChild(emptyRow);
+    return;
+  }
+
+  filteredAudits.forEach((audit) => {
+    const owner = getUserById(audit.ownerId);
+    const status = getAuditCompletionStatus(audit);
+    const overdue = isAuditOverdue(audit);
+    const row = document.createElement("div");
+    row.className = "table-row clickable";
+    row.innerHTML = `
+      <span>${audit.id}</span>
+      <span>${audit.storeName}</span>
+      <span>${owner ? owner.name : "Unassigned"}</span>
+      <span>${audit.tasks.length}</span>
+      <span>
+        <span class="badge-group">
+          <span class="badge">${status}</span>
+          ${overdue ? `<span class="badge warning">Overdue</span>` : ""}
+        </span>
+      </span>
+    `;
+    row.addEventListener("click", () => {
+      state.selectedAuditId = audit.id;
+      renderTaskList();
+      renderAuditTaskSummary();
+      renderStoreManager();
+      switchScreen("task-list");
+    });
+    elements.homeAuditRows.appendChild(row);
+  });
+}
+
 function renderAdminFilters() {
   elements.adminFilterAuditor.innerHTML = "";
   elements.adminFilterStore.innerHTML = "";
@@ -1007,6 +1180,9 @@ function renderProfiles() {
       renderProfiles();
       updateNavigationVisibility();
       renderRoleLayout();
+      renderHomeFilters();
+      renderHomeOverview();
+      renderHomeAudits();
     });
 
     elements.profileList.appendChild(card);
@@ -1167,6 +1343,10 @@ function switchScreen(target) {
   if (target === "store-manager") {
     syncStoreManagerLocaleFromAudit(getSelectedAudit(), elements.storeManagerLocaleSelect);
     renderStoreManager();
+  }
+  if (target === "home") {
+    renderHomeOverview();
+    renderHomeAudits();
   }
   if (target === "admin") {
     renderAdminOverview();
@@ -1370,6 +1550,18 @@ if (elements.auditLanguageSelect) {
   input.addEventListener("change", renderAdminOverview);
 });
 
+[
+  elements.homeFilterStatus,
+  elements.homeFilterOwner,
+  elements.homeFilterStore,
+  elements.homeFilterStart,
+  elements.homeFilterEnd,
+]
+  .filter(Boolean)
+  .forEach((filter) => {
+    filter.addEventListener("change", renderHomeAudits);
+  });
+
 function syncSelectedTask() {
   if (!state.selectedTaskId) return;
   const taskEntry = getTaskEntry(state.selectedTaskId);
@@ -1385,6 +1577,7 @@ function init() {
   updateNavigationVisibility();
   renderRoleLayout();
   renderAdminFilters();
+  renderHomeFilters();
   ensureSelectedAudit();
   renderSidebarFooter();
   renderSidebarMetrics();
@@ -1410,6 +1603,8 @@ function init() {
   renderAuditTaskSummary();
   renderTaskPool();
   renderAdminOverview();
+  renderHomeOverview();
+  renderHomeAudits();
   renderProfiles();
 }
 

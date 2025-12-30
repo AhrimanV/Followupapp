@@ -231,11 +231,39 @@ button.full {
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
 }
 
+.grid.three {
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
 .card {
   background: #ffffff;
   border-radius: 16px;
   padding: 20px;
   box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+}
+
+.metric-card {
+  display: grid;
+  gap: 6px;
+}
+
+.metric-card .eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.7rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+.metric-card .metric-value {
+  font-size: 2rem;
+  margin: 0;
+}
+
+.badge-group {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 .preview-card {
