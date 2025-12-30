@@ -548,10 +548,6 @@
                 <button class="secondary" id="remove-task-from-audit">Remove from audit</button>
               </div>
               <label class="field">
-                Manager Notes
-                <textarea id="detail-manager-notes" rows="3" placeholder="Add instructions for the store manager..."></textarea>
-              </label>
-              <label class="field">
                 Reviewer Notes
                 <textarea id="detail-reviewer-notes" rows="4" placeholder="Add approval or rejection feedback..."></textarea>
               </label>
@@ -559,28 +555,6 @@
                 <button class="secondary" id="reject-task">Reject</button>
                 <button class="primary" id="approve-task">Approve</button>
               </div>
-            </div>
-            <div class="card">
-              <h3>Proof Submission</h3>
-              <p class="muted">
-                Store managers upload proof photos here. Uploads stay in draft until you submit proof to the
-                reviewer queue.
-              </p>
-              <label class="field">
-                Store Manager Notes
-                <textarea id="proof-notes" rows="3" placeholder="Add notes for the reviewer..."></textarea>
-              </label>
-              <div class="upload-box">
-                <div>
-                  <h4>Upload proof photos</h4>
-                  <p>Drag & drop or browse files. JPG/PNG up to 10MB each.</p>
-                </div>
-                <input id="proof-files" type="file" multiple />
-              </div>
-              <button class="secondary full" id="upload-proof">Upload Proof</button>
-              <div class="gallery" id="proof-gallery"></div>
-              <div class="callout" id="reviewer-feedback"></div>
-              <button class="primary full" id="submit-proof">Submit Proof & Notify Reviewer</button>
             </div>
           </div>
         </section>
