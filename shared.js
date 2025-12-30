@@ -317,7 +317,6 @@ export const state = {
   selectedTaskId: "AT-2003",
   selectedAssignee: null,
   activeUserId: "usr-admin",
-  viewAsUserId: null,
   dragTaskId: null,
   storeManagerLocale: "en",
   storeManagerLocaleOverride: false,
@@ -330,8 +329,6 @@ const storeManagerLocaleContent = {
     languageLabel: "Language",
     languageEnglish: "English",
     languageFrench: "French",
-    previewLabel: "Viewing as",
-    previewNote: "Store manager view is active.",
     currentAuditLabel: "Current audit",
     noAuditTitle: "No audit selected",
     noAuditBody: "Assign an audit to view store manager tasks.",
@@ -359,8 +356,6 @@ const storeManagerLocaleContent = {
     languageLabel: "Langue",
     languageEnglish: "Anglais",
     languageFrench: "Français",
-    previewLabel: "Aperçu en tant que",
-    previewNote: "La vue du gérant est active.",
     currentAuditLabel: "Audit en cours",
     noAuditTitle: "Aucun audit sélectionné",
     noAuditBody: "Assignez un audit pour voir les tâches du gérant.",
@@ -475,16 +470,8 @@ export function getActiveUser() {
   return getUserById(state.activeUserId);
 }
 
-export function getEffectiveUser() {
-  return state.viewAsUserId ? getUserById(state.viewAsUserId) : getActiveUser();
-}
-
 export function isAdmin() {
   return getActiveUser()?.role === "admin";
-}
-
-export function isViewingAsUser() {
-  return Boolean(state.viewAsUserId);
 }
 
 export function getRoleLabel(role) {
@@ -554,7 +541,7 @@ export function getSelectedAudit() {
 }
 
 export function getAccessibleAudits() {
-  const user = getEffectiveUser();
+  const user = getActiveUser();
   if (!user) return [];
   if (user.role === "admin") return store.audits;
   if (user.role === "auditor") {
@@ -573,7 +560,7 @@ export function getTasksForAudit(audit) {
 }
 
 export function getVisibleTasksForAudit(audit) {
-  const user = getEffectiveUser();
+  const user = getActiveUser();
   if (!user || !audit) return [];
   if (user.role === "store-manager") {
     return audit.tasks.filter((task) => task.assignedTo === user.name || task.assignedEmail === user.email);
@@ -746,21 +733,7 @@ export function renderStoreManagerView(elements, { onTaskUpdated } = {}) {
   const audit = getSelectedAudit();
   syncStoreManagerLocaleFromAudit(audit, elements.storeManagerLocaleSelect);
   const strings = getStoreManagerStrings();
-  const user = getEffectiveUser();
-
-  if (elements.storeManagerBanner) {
-    if (isViewingAsUser() && user?.role === "store-manager") {
-      elements.storeManagerBanner.innerHTML = `
-        ${strings.previewLabel} ${user.name}
-        <span class="role-pill store-manager">${strings.managerBadge}</span>
-        <span class="muted">· ${strings.previewNote}</span>
-      `;
-      elements.storeManagerBanner.classList.remove("hidden");
-    } else {
-      elements.storeManagerBanner.textContent = "";
-      elements.storeManagerBanner.classList.add("hidden");
-    }
-  }
+  const user = getActiveUser();
   if (elements.storeManagerTitle) {
     elements.storeManagerTitle.textContent = strings.screenTitle;
   }

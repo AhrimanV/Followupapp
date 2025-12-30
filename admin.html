@@ -38,15 +38,10 @@
             <p id="screen-subtitle">Search and start a new audit follow-up.</p>
           </div>
           <div class="topbar-actions">
-            <div class="view-as admin-only">
-              <label for="view-as-select" class="muted">View as (ROS auditor or store manager)</label>
-              <select id="view-as-select"></select>
-            </div>
             <button class="secondary admin-only" id="generate-report-button">Generate Report</button>
             <button class="primary">New Audit</button>
           </div>
         </header>
-        <div class="view-banner hidden" id="view-as-banner"></div>
 
         <section class="content" id="screen-home">
           <div class="grid two">
@@ -397,12 +392,10 @@
               <option value="fr">Français</option>
             </select>
           </label>
-          <button class="secondary admin-only hidden" id="exit-view-as">Exit preview</button>
           <button class="secondary">Message Reviewer</button>
         </div>
       </header>
       <main class="store-manager-main">
-        <div class="store-manager-banner hidden" id="store-manager-banner"></div>
         <section class="content hidden" id="screen-store-manager">
           <div class="card manager-header" id="manager-audit-header"></div>
           <div class="card">
