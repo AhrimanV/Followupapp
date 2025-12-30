@@ -150,8 +150,11 @@ const elements = {
   adminFilterEnd: document.getElementById("admin-filter-end"),
   adminAuditRows: document.getElementById("admin-audit-rows"),
   homeOpenAudits: document.getElementById("home-open-audits"),
+  homeOpenAuditsButton: document.getElementById("home-open-audits-button"),
   homeOverdueAudits: document.getElementById("home-overdue-audits"),
+  homeOverdueAuditsButton: document.getElementById("home-overdue-audits-button"),
   homeAwaitingApproval: document.getElementById("home-awaiting-approval"),
+  homeAwaitingApprovalButton: document.getElementById("home-awaiting-approval-button"),
   auditListFilterStatus: document.getElementById("audit-list-filter-status"),
   auditListFilterAuditor: document.getElementById("audit-list-filter-auditor"),
   auditListFilterStore: document.getElementById("audit-list-filter-store"),
@@ -164,6 +167,7 @@ const elements = {
   sidebarFooter: document.getElementById("sidebar-footer"),
   sidebarStoreCode: document.getElementById("sidebar-store-code"),
   sidebarAuditStatus: document.getElementById("sidebar-audit-status"),
+  sidebarAuditStatusButton: document.getElementById("sidebar-audit-status-button"),
   saveContinueButton: document.getElementById("save-continue-button"),
   auditIdInput: document.getElementById("audit-id-input"),
   auditDateInput: document.getElementById("audit-date-input"),
@@ -332,9 +336,27 @@ function renderSidebarMetrics() {
   if (!elements.sidebarMetrics) return;
   const metrics = getSidebarMetrics();
   elements.sidebarMetrics.innerHTML = `
-    <div class="metric"><span>Open audits</span><strong>${metrics.openAudits}</strong></div>
-    <div class="metric"><span>Tasks awaiting approval</span><strong>${metrics.tasksAwaitingApproval}</strong></div>
+    <button class="metric metric-button" type="button" id="sidebar-open-audits">
+      <span>Open audits</span>
+      <strong>${metrics.openAudits}</strong>
+    </button>
+    <button class="metric metric-button" type="button" id="sidebar-awaiting-approval">
+      <span>Tasks awaiting approval</span>
+      <strong>${metrics.tasksAwaitingApproval}</strong>
+    </button>
   `;
+  const sidebarOpenAudits = elements.sidebarMetrics.querySelector("#sidebar-open-audits");
+  if (sidebarOpenAudits) {
+    sidebarOpenAudits.addEventListener("click", () => {
+      openAuditListWithFilters({ status: "open" });
+    });
+  }
+  const sidebarAwaitingApproval = elements.sidebarMetrics.querySelector("#sidebar-awaiting-approval");
+  if (sidebarAwaitingApproval) {
+    sidebarAwaitingApproval.addEventListener("click", () => {
+      openTasksAwaitingApproval();
+    });
+  }
 }
 
 function populateStoreContactFields(contact) {
@@ -1508,6 +1530,44 @@ function filterAuditsForAuditList() {
   });
 }
 
+function openAuditListWithFilters({
+  status = "all",
+  auditor = "all",
+  store = "all",
+  startDate = "",
+  endDate = "",
+} = {}) {
+  switchScreen("audit-list");
+  if (elements.auditListFilterStatus) {
+    elements.auditListFilterStatus.value = status;
+  }
+  if (elements.auditListFilterAuditor) {
+    elements.auditListFilterAuditor.value = auditor;
+  }
+  if (elements.auditListFilterStore) {
+    elements.auditListFilterStore.value = store;
+  }
+  if (elements.auditListFilterStart) {
+    elements.auditListFilterStart.value = startDate;
+  }
+  if (elements.auditListFilterEnd) {
+    elements.auditListFilterEnd.value = endDate;
+  }
+  renderAuditList();
+}
+
+function openTasksAwaitingApproval() {
+  switchScreen("reviewer-queue");
+}
+
+function getAuditListStatusFilterFromAudit(audit) {
+  if (!audit) return "all";
+  const status = getAuditCompletionStatus(audit).toLowerCase();
+  if (status === "open") return "open";
+  if (status === "complete") return "completed";
+  return "all";
+}
+
 function renderAuditRows({ container, audits, emptyMessage }) {
   container.innerHTML = "";
 
@@ -1933,6 +1993,31 @@ if (elements.homeContinueButton) {
 if (elements.homeFindAuditsButton) {
   elements.homeFindAuditsButton.addEventListener("click", () => {
     switchScreen("audit-list");
+  });
+}
+
+if (elements.homeOpenAuditsButton) {
+  elements.homeOpenAuditsButton.addEventListener("click", () => {
+    openAuditListWithFilters({ status: "open" });
+  });
+}
+
+if (elements.homeOverdueAuditsButton) {
+  elements.homeOverdueAuditsButton.addEventListener("click", () => {
+    openAuditListWithFilters({ status: "overdue" });
+  });
+}
+
+if (elements.homeAwaitingApprovalButton) {
+  elements.homeAwaitingApprovalButton.addEventListener("click", () => {
+    openTasksAwaitingApproval();
+  });
+}
+
+if (elements.sidebarAuditStatusButton) {
+  elements.sidebarAuditStatusButton.addEventListener("click", () => {
+    const statusFilter = getAuditListStatusFilterFromAudit(getSelectedAudit());
+    openAuditListWithFilters({ status: statusFilter });
   });
 }
 

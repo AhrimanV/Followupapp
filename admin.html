@@ -30,7 +30,12 @@
         <div class="sidebar-metrics" id="sidebar-metrics"></div>
         <div class="sidebar-footer hidden" id="sidebar-footer">
           <p>Store Code: <strong id="sidebar-store-code">--</strong></p>
-          <p>Status: <span class="status-pill" id="sidebar-audit-status">Open</span></p>
+          <p>
+            Status:
+            <button class="status-pill-button" type="button" id="sidebar-audit-status-button">
+              <span class="status-pill" id="sidebar-audit-status">Open</span>
+            </button>
+          </p>
         </div>
       </aside>
       <main class="main">
@@ -48,19 +53,25 @@
         <section class="content" id="screen-home">
           <div class="grid three">
             <div class="card metric-card">
-              <p class="eyebrow">Open Audits</p>
-              <strong class="metric-value" id="home-open-audits">0</strong>
-              <p class="muted">Audits still in progress.</p>
+              <button class="metric-button" type="button" id="home-open-audits-button">
+                <p class="eyebrow">Open Audits</p>
+                <strong class="metric-value" id="home-open-audits">0</strong>
+                <p class="muted">Audits still in progress.</p>
+              </button>
             </div>
             <div class="card metric-card">
-              <p class="eyebrow">Overdue Audits</p>
-              <strong class="metric-value danger" id="home-overdue-audits">0</strong>
-              <p class="muted">Audits with overdue tasks.</p>
+              <button class="metric-button" type="button" id="home-overdue-audits-button">
+                <p class="eyebrow">Overdue Audits</p>
+                <strong class="metric-value danger" id="home-overdue-audits">0</strong>
+                <p class="muted">Audits with overdue tasks.</p>
+              </button>
             </div>
             <div class="card metric-card">
-              <p class="eyebrow">Waiting Approval</p>
-              <strong class="metric-value" id="home-awaiting-approval">0</strong>
-              <p class="muted">Proofs pending reviewer action.</p>
+              <button class="metric-button" type="button" id="home-awaiting-approval-button">
+                <p class="eyebrow">Waiting Approval</p>
+                <strong class="metric-value" id="home-awaiting-approval">0</strong>
+                <p class="muted">Proofs pending reviewer action.</p>
+              </button>
             </div>
           </div>
           <div class="grid two">
