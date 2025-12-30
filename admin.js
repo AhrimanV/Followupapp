@@ -118,18 +118,21 @@ const elements = {
   taskNotesInputFr: document.getElementById("task-notes-input-fr"),
   taskProofRequiredInput: document.getElementById("task-proof-required-input"),
   addTaskButton: document.getElementById("add-task-button"),
-  bulkAddButton: document.getElementById("bulk-add-button"),
   taskPoolList: document.getElementById("task-pool-list"),
   auditTypeLibrarySelect: document.getElementById("audit-type-library-select"),
   auditTypeNameInputEn: document.getElementById("audit-type-name-en"),
   auditTypeNameInputFr: document.getElementById("audit-type-name-fr"),
   saveAuditTypeButton: document.getElementById("save-audit-type-button"),
   addAuditTypeButton: document.getElementById("add-audit-type-button"),
+  deleteAuditTypeButton: document.getElementById("delete-audit-type-button"),
   auditTypeReadonlyNote: document.getElementById("audit-type-readonly-note"),
   categoryNameInputEn: document.getElementById("category-name-input-en"),
   categoryNameInputFr: document.getElementById("category-name-input-fr"),
   saveCategoryButton: document.getElementById("save-category-button"),
   categoryList: document.getElementById("category-list"),
+  copyAuditTypeSelect: document.getElementById("copy-audit-type-select"),
+  copyCategorySelect: document.getElementById("copy-category-select"),
+  copyCategoryButton: document.getElementById("copy-category-button"),
   taskAssignee: document.getElementById("detail-task-assignee"),
   taskAssigneeEmail: document.getElementById("detail-task-email"),
   taskProofRequired: document.getElementById("detail-task-proof"),
@@ -1107,6 +1110,7 @@ function renderAuditTypeLibrary() {
   if (elements.auditTypeNameInputFr) {
     elements.auditTypeNameInputFr.value = getLocalizedValue(selectedType?.name, "fr");
   }
+  renderCopyFromAuditOptions();
 }
 
 function renderAuditTypeSelectOptions() {
@@ -1121,6 +1125,55 @@ function renderAuditTypeSelectOptions() {
   if (store.auditTypes.length && !elements.auditTypeSelect.value) {
     elements.auditTypeSelect.value = store.auditTypes[0].id;
   }
+}
+
+function renderCopyFromAuditOptions() {
+  if (!elements.copyAuditTypeSelect || !elements.copyCategorySelect || !elements.copyCategoryButton) return;
+  const currentType = getSelectedAuditType();
+  const availableTypes = store.auditTypes.filter((type) => type.id !== currentType?.id);
+  elements.copyAuditTypeSelect.innerHTML = "";
+  if (!availableTypes.length) {
+    const option = document.createElement("option");
+    option.value = "";
+    option.textContent = "No other audit types available";
+    elements.copyAuditTypeSelect.appendChild(option);
+    elements.copyAuditTypeSelect.disabled = true;
+  } else {
+    elements.copyAuditTypeSelect.disabled = false;
+    availableTypes.forEach((type) => {
+      const option = document.createElement("option");
+      option.value = type.id;
+      option.textContent = formatBilingualText(type.name);
+      elements.copyAuditTypeSelect.appendChild(option);
+    });
+    if (!availableTypes.some((type) => type.id === elements.copyAuditTypeSelect.value)) {
+      elements.copyAuditTypeSelect.value = availableTypes[0].id;
+    }
+  }
+
+  elements.copyCategorySelect.innerHTML = "";
+  const selectedSource = getAuditTypeById(elements.copyAuditTypeSelect.value);
+  if (!selectedSource?.categories?.length) {
+    const option = document.createElement("option");
+    option.value = "";
+    option.textContent = "No categories available";
+    elements.copyCategorySelect.appendChild(option);
+    elements.copyCategorySelect.disabled = true;
+    elements.copyCategoryButton.disabled = true;
+    return;
+  }
+
+  elements.copyCategorySelect.disabled = false;
+  selectedSource.categories.forEach((category) => {
+    const option = document.createElement("option");
+    option.value = category.id;
+    option.textContent = formatBilingualText(category.name);
+    elements.copyCategorySelect.appendChild(option);
+  });
+  if (!selectedSource.categories.some((category) => category.id === elements.copyCategorySelect.value)) {
+    elements.copyCategorySelect.value = selectedSource.categories[0].id;
+  }
+  elements.copyCategoryButton.disabled = false;
 }
 
 function renderCategoryOptions() {
@@ -1169,10 +1222,15 @@ function renderCategoryList() {
         <strong>${formatBilingualText(category.name)}</strong>
         <small>${category.tasks.length} tasks</small>
       </div>
-      <button class="secondary">Edit</button>
+      <div class="task-actions">
+        <button class="secondary" data-action="edit">Edit</button>
+        <button class="secondary" data-action="delete">Delete</button>
+      </div>
     `;
-    const editButton = row.querySelector("button");
+    const editButton = row.querySelector('[data-action="edit"]');
+    const deleteButton = row.querySelector('[data-action="delete"]');
     editButton.disabled = !canEdit;
+    deleteButton.disabled = !canEdit;
     editButton.addEventListener("click", () => {
       if (!canEdit) return;
       editingCategoryId = category.id;
@@ -1185,6 +1243,25 @@ function renderCategoryList() {
       if (elements.saveCategoryButton) {
         elements.saveCategoryButton.textContent = "Update Category";
       }
+    });
+    deleteButton.addEventListener("click", () => {
+      if (!canEdit) return;
+      const confirmDelete = window.confirm(
+        `Delete the ${formatBilingualText(category.name)} category and its ${category.tasks.length} templates?`,
+      );
+      if (!confirmDelete) return;
+      const auditType = getSelectedAuditType();
+      if (!auditType) return;
+      auditType.categories = auditType.categories.filter((entry) => entry.id !== category.id);
+      if (editingCategoryId === category.id) {
+        resetCategoryForm();
+      }
+      if (editingTemplateRef?.categoryId === category.id) {
+        resetTemplateForm();
+      }
+      renderCategoryOptions();
+      renderCategoryList();
+      renderTaskPool();
     });
     elements.categoryList.appendChild(row);
   });
@@ -1215,6 +1292,7 @@ function applyTemplateEditorAccess() {
     elements.auditTypeNameInputFr,
     elements.saveAuditTypeButton,
     elements.addAuditTypeButton,
+    elements.deleteAuditTypeButton,
     elements.categoryNameInputEn,
     elements.categoryNameInputFr,
     elements.saveCategoryButton,
@@ -1225,7 +1303,9 @@ function applyTemplateEditorAccess() {
     elements.taskCategorySelect,
     elements.taskProofRequiredInput,
     elements.addTaskButton,
-    elements.bulkAddButton,
+    elements.copyAuditTypeSelect,
+    elements.copyCategorySelect,
+    elements.copyCategoryButton,
   ]
     .filter(Boolean)
     .forEach((element) => {
@@ -1448,10 +1528,15 @@ function renderTaskPool() {
           <small>${formatBilingualText(category.name)}</small>
           <small class="muted">${formatBilingualText(template.notes)}</small>
         </div>
-        <button class="secondary">Edit</button>
+        <div class="task-actions">
+          <button class="secondary" data-action="edit">Edit</button>
+          <button class="secondary" data-action="delete">Delete</button>
+        </div>
       `;
-      const editButton = poolItem.querySelector("button");
+      const editButton = poolItem.querySelector('[data-action="edit"]');
+      const deleteButton = poolItem.querySelector('[data-action="delete"]');
       editButton.disabled = !canEdit;
+      deleteButton.disabled = !canEdit;
       editButton.addEventListener("click", () => {
         if (!canEdit) return;
         editingTemplateRef = { categoryId: category.id, templateId: template.id };
@@ -1464,6 +1549,22 @@ function renderTaskPool() {
         }
         if (elements.addTaskButton) elements.addTaskButton.textContent = "Update Task";
         renderCategoryOptions();
+      });
+      deleteButton.addEventListener("click", () => {
+        if (!canEdit) return;
+        const confirmDelete = window.confirm(
+          `Delete the ${formatBilingualText(template.title)} template from ${formatBilingualText(
+            category.name,
+          )}?`,
+        );
+        if (!confirmDelete) return;
+        category.tasks = category.tasks.filter((task) => task.id !== template.id);
+        if (editingTemplateRef?.templateId === template.id) {
+          resetTemplateForm();
+        }
+        renderTaskTemplatePicker();
+        renderCategoryList();
+        renderTaskPool();
       });
       elements.taskPoolList.appendChild(poolItem);
     });
@@ -1922,6 +2023,17 @@ function createTemplate({ titleEn, titleFr, categoryId, notesEn, notesFr, requir
   return template;
 }
 
+function hasMatchingTemplate(category, template) {
+  if (!category) return false;
+  const titleEn = getLocalizedValue(template.title, "en").toLowerCase();
+  const titleFr = getLocalizedValue(template.title, "fr").toLowerCase();
+  return category.tasks.some((task) => {
+    const taskEn = getLocalizedValue(task.title, "en").toLowerCase();
+    const taskFr = getLocalizedValue(task.title, "fr").toLowerCase();
+    return (titleEn && taskEn === titleEn) || (titleFr && taskFr === titleFr);
+  });
+}
+
 function assignTemplateToAudit(templateId, audit) {
   if (!audit) return;
   const entry = getAuditTypeTemplateEntry(audit.auditType, templateId);
@@ -2180,6 +2292,30 @@ if (elements.addAuditTypeButton) {
   });
 }
 
+if (elements.deleteAuditTypeButton) {
+  elements.deleteAuditTypeButton.addEventListener("click", () => {
+    const auditType = getSelectedAuditType();
+    if (!auditType) return;
+    if (store.auditTypes.length <= 1) {
+      window.alert("At least one audit type library is required.");
+      return;
+    }
+    const confirmDelete = window.confirm(
+      `Delete the ${formatBilingualText(auditType.name)} audit type and its ${auditType.categories.length} categories?`,
+    );
+    if (!confirmDelete) return;
+    store.auditTypes = store.auditTypes.filter((type) => type.id !== auditType.id);
+    selectedAuditTypeId = store.auditTypes[0]?.id || "";
+    resetCategoryForm();
+    resetTemplateForm();
+    renderAuditTypeLibrary();
+    renderAuditTypeSelectOptions();
+    renderCategoryOptions();
+    renderCategoryList();
+    renderTaskPool();
+  });
+}
+
 if (elements.saveCategoryButton) {
   elements.saveCategoryButton.addEventListener("click", () => {
     const auditType = getSelectedAuditType();
@@ -2199,6 +2335,42 @@ if (elements.saveCategoryButton) {
       ensureCategory(auditType, nameEn, nameFr);
       resetCategoryForm();
     }
+    renderCategoryOptions();
+    renderCategoryList();
+    renderTaskPool();
+  });
+}
+
+if (elements.copyAuditTypeSelect) {
+  elements.copyAuditTypeSelect.addEventListener("change", () => {
+    renderCopyFromAuditOptions();
+  });
+}
+
+if (elements.copyCategoryButton) {
+  elements.copyCategoryButton.addEventListener("click", () => {
+    const auditType = getSelectedAuditType();
+    const sourceTypeId = elements.copyAuditTypeSelect?.value;
+    const sourceCategoryId = elements.copyCategorySelect?.value;
+    if (!auditType || !sourceTypeId || !sourceCategoryId) return;
+    const sourceType = getAuditTypeById(sourceTypeId);
+    const sourceCategory = findCategoryById(sourceType, sourceCategoryId);
+    if (!sourceCategory) return;
+    const targetCategory = ensureCategory(
+      auditType,
+      getLocalizedValue(sourceCategory.name, "en"),
+      getLocalizedValue(sourceCategory.name, "fr"),
+    );
+    if (!targetCategory) return;
+    sourceCategory.tasks.forEach((template) => {
+      if (hasMatchingTemplate(targetCategory, template)) return;
+      targetCategory.tasks.push({
+        id: generateTemplateId(),
+        title: { ...template.title },
+        notes: { ...template.notes },
+        requiresProof: template.requiresProof ?? true,
+      });
+    });
     renderCategoryOptions();
     renderCategoryList();
     renderTaskPool();
@@ -2255,44 +2427,6 @@ if (elements.saveContinueButton) {
   });
 }
 
-elements.bulkAddButton.addEventListener("click", () => {
-  const chips = document.querySelectorAll("#screen-create-tasks .chip");
-  const auditType = getSelectedAuditType();
-  if (!auditType) return;
-  chips.forEach((chip) => {
-    const titleEn = chip.dataset.titleEn || chip.textContent.trim();
-    const titleFr = chip.dataset.titleFr || "";
-    const notesEn = chip.dataset.notesEn || "";
-    const notesFr = chip.dataset.notesFr || "";
-    const categoryEn = chip.dataset.categoryEn || chip.dataset.category || "General";
-    const categoryFr = chip.dataset.categoryFr || "";
-    const category = ensureCategory(auditType, categoryEn, categoryFr);
-    if (!category) return;
-    const exists = category.tasks.some(
-      (task) =>
-        getLocalizedValue(task.title, "en").toLowerCase() === titleEn.toLowerCase() ||
-        getLocalizedValue(task.title, "fr").toLowerCase() === titleFr.toLowerCase(),
-    );
-    if (!exists) {
-      category.tasks.push({
-        id: generateTemplateId(),
-        title: {
-          en: titleEn,
-          fr: titleFr || titleEn,
-        },
-        notes: {
-          en: notesEn,
-          fr: notesFr || notesEn,
-        },
-        requiresProof: true,
-      });
-    }
-  });
-  renderTaskTemplatePicker();
-  renderCategoryOptions();
-  renderCategoryList();
-  renderTaskPool();
-});
 
 elements.approveButton.addEventListener("click", async () => {
   const reviewerNotes = elements.reviewerNotes.value.trim();
