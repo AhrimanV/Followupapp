@@ -95,15 +95,8 @@ const elements = {
   taskStatus: document.getElementById("detail-task-status"),
   taskSubmission: document.getElementById("detail-task-submission"),
   reviewerNotes: document.getElementById("detail-reviewer-notes"),
-  managerNotes: document.getElementById("detail-manager-notes"),
   rejectButton: document.getElementById("reject-task"),
   approveButton: document.getElementById("approve-task"),
-  proofNotes: document.getElementById("proof-notes"),
-  proofFiles: document.getElementById("proof-files"),
-  uploadProof: document.getElementById("upload-proof"),
-  submitProof: document.getElementById("submit-proof"),
-  proofGallery: document.getElementById("proof-gallery"),
-  reviewerFeedback: document.getElementById("reviewer-feedback"),
   reviewerQueueList: document.getElementById("reviewer-queue-list"),
   queueAlert: document.getElementById("queue-alert"),
   queueAlertText: document.getElementById("queue-alert-text"),
@@ -922,16 +915,8 @@ function renderTaskDetail() {
     elements.taskAssignee.textContent = "";
     elements.taskAssigneeEmail.textContent = "";
     elements.reviewerNotes.value = "";
-    elements.managerNotes.value = "";
-    elements.proofNotes.value = "";
-    elements.proofGallery.innerHTML = "";
-    elements.proofGallery.classList.add("hidden");
-    elements.reviewerFeedback.classList.add("hidden");
-    elements.reviewerFeedback.textContent = "";
     elements.rejectButton.disabled = true;
     elements.approveButton.disabled = true;
-    elements.submitProof.disabled = true;
-    elements.uploadProof.disabled = true;
     if (elements.taskDetailDueInput) {
       elements.taskDetailDueInput.value = "";
       elements.taskDetailDueInput.max = "";
@@ -959,8 +944,6 @@ function renderTaskDetail() {
   const { audit, task } = taskEntry;
   elements.rejectButton.disabled = false;
   elements.approveButton.disabled = false;
-  elements.submitProof.disabled = false;
-  elements.uploadProof.disabled = false;
   elements.taskTitle.textContent = task.title;
   elements.taskCategory.textContent = task.category;
   elements.taskAudit.textContent = `${audit.id} · ${audit.storeName}`;
@@ -972,23 +955,6 @@ function renderTaskDetail() {
   elements.taskAssignee.textContent = task.assignedTo || "Unassigned";
   elements.taskAssigneeEmail.textContent = task.assignedEmail || "";
   elements.reviewerNotes.value = task.reviewerNotes || "";
-  elements.managerNotes.value = task.managerNotes || "";
-  elements.proofNotes.value = task.pendingProof?.notes || "";
-  elements.proofGallery.innerHTML = "";
-  elements.proofGallery.classList.toggle("hidden", !requiresProof);
-
-  const submission = task.submissions[task.submissions.length - 1];
-  if (requiresProof && submission?.photos?.length) {
-    submission.photos.forEach((photo) => {
-      const img = document.createElement("div");
-      img.className = "gallery-item";
-      img.textContent = photo;
-      elements.proofGallery.appendChild(img);
-    });
-  }
-
-  elements.reviewerFeedback.classList.toggle("hidden", task.status !== TaskStatus.REJECTED);
-  elements.reviewerFeedback.textContent = task.reviewerNotes || "No reviewer feedback.";
   if (elements.taskDetailDueInput) {
     elements.taskDetailDueInput.disabled = false;
     const deadline = elements.auditDeadlineInput?.value || audit.deadline || "";
@@ -2143,22 +2109,6 @@ elements.bulkAddButton.addEventListener("click", () => {
   renderTaskPool();
 });
 
-elements.uploadProof.addEventListener("click", async () => {
-  const taskId = state.selectedTaskId;
-  const notes = elements.proofNotes.value.trim();
-  const photos = Array.from(elements.proofFiles.files || []).map((file) => file.name);
-  await api.uploadProof({ taskId, notes, photos });
-  renderTaskDetail();
-});
-
-elements.submitProof.addEventListener("click", async () => {
-  await api.submitProof({ taskId: state.selectedTaskId });
-  renderTaskList();
-  renderTaskDetail();
-  renderReviewerQueue();
-  switchScreen("reviewer-queue");
-});
-
 elements.approveButton.addEventListener("click", async () => {
   const reviewerNotes = elements.reviewerNotes.value.trim();
   await api.reviewSubmission({
@@ -2182,13 +2132,6 @@ elements.rejectButton.addEventListener("click", async () => {
   renderTaskDetail();
   renderReviewerQueue();
   switchScreen("task-list");
-});
-
-elements.managerNotes.addEventListener("input", (event) => {
-  const taskEntry = getTaskEntry(state.selectedTaskId);
-  if (!taskEntry) return;
-  taskEntry.task.managerNotes = event.target.value;
-  renderStoreManager();
 });
 
 if (elements.taskDetailDueInput) {
