@@ -522,6 +522,7 @@ export const state = {
 
 const storeManagerLocaleContent = {
   en: {
+    dateLocale: "en-US",
     screenTitle: "My Assigned Tasks",
     screenSubtitle: "Upload proof and submit tasks to the reviewer queue.",
     languageLabel: "Language",
@@ -532,7 +533,10 @@ const storeManagerLocaleContent = {
     noAuditBody: "Assign an audit to view store manager tasks.",
     managerBadge: "Store Manager",
     tasksCount: (count) => `${count} tasks`,
+    dueLabel: "Due",
     duePrefix: "Due",
+    dueWindowLabel: "Due window",
+    noDueDatesLabel: "No due dates",
     overdueLabel: "Overdue",
     managerNotesLabel: "Manager notes:",
     reviewerNotesLabel: "Reviewer notes:",
@@ -549,6 +553,7 @@ const storeManagerLocaleContent = {
     proofOptionalNote: "Proof upload not required for this task.",
   },
   fr: {
+    dateLocale: "fr-CA",
     screenTitle: "Mes tâches assignées",
     screenSubtitle: "Téléversez des preuves et soumettez les tâches à la file de révision.",
     languageLabel: "Langue",
@@ -559,7 +564,10 @@ const storeManagerLocaleContent = {
     noAuditBody: "Assignez un audit pour voir les tâches du gérant.",
     managerBadge: "Gérant de magasin",
     tasksCount: (count) => `${count} tâches`,
+    dueLabel: "Échéance",
     duePrefix: "Échéance",
+    dueWindowLabel: "Période d'échéance",
+    noDueDatesLabel: "Aucune date d'échéance",
     overdueLabel: "En retard",
     managerNotesLabel: "Notes du responsable :",
     reviewerNotesLabel: "Notes du réviseur :",
@@ -922,10 +930,27 @@ export function generateAuditTaskId() {
   return `AT-${String(maxId + 1).padStart(4, "0")}`;
 }
 
-export function formatDate(value) {
+function resolveLocale(localeOrLabels) {
+  if (!localeOrLabels) return "en-US";
+  if (typeof localeOrLabels === "string") {
+    if (localeOrLabels === "fr") return "fr-CA";
+    if (localeOrLabels === "en") return "en-US";
+    return localeOrLabels;
+  }
+  if (typeof localeOrLabels === "object") {
+    const locale =
+      localeOrLabels.dateLocale || localeOrLabels.locale || localeOrLabels.language || null;
+    if (locale === "fr") return "fr-CA";
+    if (locale === "en") return "en-US";
+    return locale || "en-US";
+  }
+  return "en-US";
+}
+
+export function formatDate(value, localeOrLabels) {
   if (!value) return "";
   const date = new Date(value);
-  return date.toLocaleDateString("en-US", {
+  return date.toLocaleDateString(resolveLocale(localeOrLabels), {
     month: "short",
     day: "2-digit",
     year: "numeric",
@@ -1030,18 +1055,21 @@ export function isTaskOverdue(task) {
   return due < today;
 }
 
-export function formatDateRange(dates) {
+export function formatDateRange(dates, localeOrLabels) {
+  const labels = typeof localeOrLabels === "object" ? localeOrLabels : null;
   const validDates = dates
     .map((date) => (date ? new Date(date) : null))
     .filter((date) => date && !Number.isNaN(date.valueOf()));
-  if (!validDates.length) return "No due dates";
+  if (!validDates.length) return labels?.noDueDatesLabel || "No due dates";
   const sortedDates = validDates.sort((a, b) => a - b);
   const start = sortedDates[0];
   const end = sortedDates[sortedDates.length - 1];
   if (start.toDateString() === end.toDateString()) {
-    return `Due ${formatDate(start)}`;
+    const dueLabel = labels?.dueLabel || labels?.duePrefix || "Due";
+    return `${dueLabel} ${formatDate(start, localeOrLabels)}`;
   }
-  return `Due window ${formatDate(start)} - ${formatDate(end)}`;
+  const dueWindowLabel = labels?.dueWindowLabel || "Due window";
+  return `${dueWindowLabel} ${formatDate(start, localeOrLabels)} - ${formatDate(end, localeOrLabels)}`;
 }
 
 export function getAuditCompletionStatus(audit) {
@@ -1131,7 +1159,7 @@ export function renderStoreManagerView(elements, { onTaskUpdated } = {}) {
             task.assignedTo === user.name,
         )
       : [];
-  const dueWindow = formatDateRange(managerTasks.map((task) => task.dueDate));
+  const dueWindow = formatDateRange(managerTasks.map((task) => task.dueDate), strings);
 
   if (elements.managerAuditHeader) {
     elements.managerAuditHeader.innerHTML = `
@@ -1175,7 +1203,7 @@ export function renderStoreManagerView(elements, { onTaskUpdated } = {}) {
       <div class="manager-task-header">
         <div>
           <h4>${task.title}</h4>
-          <p>${strings.duePrefix} ${formatDate(task.dueDate)} · ${task.id}</p>
+          <p>${strings.duePrefix} ${formatDate(task.dueDate, strings)} · ${task.id}</p>
           <p class="muted">${task.category || ""}</p>
         </div>
         <div class="manager-task-badges">
