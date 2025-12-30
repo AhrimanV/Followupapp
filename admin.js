@@ -21,6 +21,7 @@ import {
   getRoleLabel,
   getSidebarMetrics,
   getSelectedAudit,
+  getStoreContactByCode,
   getStatusBadgeClass,
   getTaskEntry,
   getTasksForAudit,
@@ -143,14 +144,28 @@ const elements = {
   auditIdInput: document.getElementById("audit-id-input"),
   auditDateInput: document.getElementById("audit-date-input"),
   auditOwnerInput: document.getElementById("audit-owner-input"),
+  auditTypeSelect: document.getElementById("audit-type-select"),
+  auditStoreCodeInput: document.getElementById("audit-store-code-input"),
   auditStoreInput: document.getElementById("audit-store-input"),
+  auditStoreManagerInput: document.getElementById("audit-store-manager-input"),
+  auditStoreManagerEmailInput: document.getElementById("audit-store-manager-email-input"),
+  auditRegionalManagerInput: document.getElementById("audit-regional-manager-input"),
+  auditRegionalManagerEmailInput: document.getElementById("audit-regional-manager-email-input"),
+  auditDirectorInput: document.getElementById("audit-director-input"),
+  auditDirectorEmailInput: document.getElementById("audit-director-email-input"),
   auditAssigneeInput: document.getElementById("audit-assignee-input"),
+  auditBackupAssigneeEmailInput: document.getElementById("audit-backup-assignee-email-input"),
   auditDeadlineInput: document.getElementById("audit-deadline-input"),
   auditReminderInput: document.getElementById("audit-reminder-input"),
   auditLanguageSelect: document.getElementById("audit-language-select"),
-  auditAppLinkInput: document.getElementById("audit-app-link-input"),
   auditSummaryInput: document.getElementById("audit-summary-input"),
   auditPhotosInput: document.getElementById("audit-photos-input"),
+  auditReminderStoreManager: document.getElementById("audit-reminder-sm"),
+  auditReminderRegionalManager: document.getElementById("audit-reminder-rm"),
+  auditReminderDirector: document.getElementById("audit-reminder-director"),
+  auditDeadlineStoreManager: document.getElementById("audit-deadline-sm"),
+  auditDeadlineRegionalManager: document.getElementById("audit-deadline-rm"),
+  auditDeadlineDirector: document.getElementById("audit-deadline-director"),
   auditEmailPreview: document.getElementById("audit-email-preview"),
   auditEmailSendLog: document.getElementById("audit-email-send-log"),
   auditNotificationLog: document.getElementById("audit-notification-log"),
@@ -274,6 +289,76 @@ function renderSidebarMetrics() {
   `;
 }
 
+function populateStoreContactFields(contact) {
+  if (!contact) return;
+  if (elements.auditStoreInput) elements.auditStoreInput.value = contact.storeName || "";
+  if (elements.auditStoreManagerInput) elements.auditStoreManagerInput.value = contact.storeManager || "";
+  if (elements.auditStoreManagerEmailInput) {
+    elements.auditStoreManagerEmailInput.value = contact.storeManagerEmail || "";
+  }
+  if (elements.auditRegionalManagerInput) {
+    elements.auditRegionalManagerInput.value = contact.regionalManager || "";
+  }
+  if (elements.auditRegionalManagerEmailInput) {
+    elements.auditRegionalManagerEmailInput.value = contact.regionalManagerEmail || "";
+  }
+  if (elements.auditDirectorInput) elements.auditDirectorInput.value = contact.director || "";
+  if (elements.auditDirectorEmailInput) {
+    elements.auditDirectorEmailInput.value = contact.directorEmail || "";
+  }
+}
+
+function getEscalationRulesFromForm(audit) {
+  const reminderRecipients = [];
+  if (elements.auditReminderStoreManager?.checked) reminderRecipients.push("store-manager");
+  if (elements.auditReminderRegionalManager?.checked) reminderRecipients.push("regional-manager");
+  if (elements.auditReminderDirector?.checked) reminderRecipients.push("director");
+
+  const deadlineRecipients = [];
+  if (elements.auditDeadlineStoreManager?.checked) deadlineRecipients.push("store-manager");
+  if (elements.auditDeadlineRegionalManager?.checked) deadlineRecipients.push("regional-manager");
+  if (elements.auditDeadlineDirector?.checked) deadlineRecipients.push("director");
+
+  const hasControls =
+    elements.auditReminderStoreManager ||
+    elements.auditReminderRegionalManager ||
+    elements.auditReminderDirector ||
+    elements.auditDeadlineStoreManager ||
+    elements.auditDeadlineRegionalManager ||
+    elements.auditDeadlineDirector;
+
+  return {
+    reminderRecipients: hasControls
+      ? reminderRecipients
+      : audit?.escalationRules?.reminderRecipients || defaultEscalationRules.reminderRecipients,
+    deadlineRecipients: hasControls
+      ? deadlineRecipients
+      : audit?.escalationRules?.deadlineRecipients || defaultEscalationRules.deadlineRecipients,
+  };
+}
+
+function applyEscalationRulesToForm(escalationRules) {
+  const rules = ensureEscalationRules({ escalationRules });
+  if (elements.auditReminderStoreManager) {
+    elements.auditReminderStoreManager.checked = rules.reminderRecipients.includes("store-manager");
+  }
+  if (elements.auditReminderRegionalManager) {
+    elements.auditReminderRegionalManager.checked = rules.reminderRecipients.includes("regional-manager");
+  }
+  if (elements.auditReminderDirector) {
+    elements.auditReminderDirector.checked = rules.reminderRecipients.includes("director");
+  }
+  if (elements.auditDeadlineStoreManager) {
+    elements.auditDeadlineStoreManager.checked = rules.deadlineRecipients.includes("store-manager");
+  }
+  if (elements.auditDeadlineRegionalManager) {
+    elements.auditDeadlineRegionalManager.checked = rules.deadlineRecipients.includes("regional-manager");
+  }
+  if (elements.auditDeadlineDirector) {
+    elements.auditDeadlineDirector.checked = rules.deadlineRecipients.includes("director");
+  }
+}
+
 function buildAuditDraftFromForm(audit) {
   const baseAudit = audit || {};
   const ownerLookupValue = elements.auditOwnerInput?.value.trim();
@@ -283,15 +368,31 @@ function buildAuditDraftFromForm(audit) {
       user.email.toLowerCase() === ownerLookupValue?.toLowerCase(),
   );
   const reminderCadence = getReminderCadenceFromInput(baseAudit);
+  const escalationRules = getEscalationRulesFromForm(baseAudit);
   return {
     ...baseAudit,
     id: elements.auditIdInput?.value.trim() || baseAudit.id,
     createdAt: elements.auditDateInput?.value || baseAudit.createdAt,
+    auditType: elements.auditTypeSelect?.value || baseAudit.auditType,
+    storeCode: elements.auditStoreCodeInput?.value.trim() || baseAudit.storeCode,
     storeName: elements.auditStoreInput?.value.trim() || baseAudit.storeName,
+    storeManagerName:
+      elements.auditStoreManagerInput?.value.trim() || baseAudit.storeManagerName,
+    storeManagerEmail:
+      elements.auditStoreManagerEmailInput?.value.trim() || baseAudit.storeManagerEmail,
+    regionalManagerName:
+      elements.auditRegionalManagerInput?.value.trim() || baseAudit.regionalManagerName,
+    regionalManagerEmail:
+      elements.auditRegionalManagerEmailInput?.value.trim() || baseAudit.regionalManagerEmail,
+    directorName: elements.auditDirectorInput?.value.trim() || baseAudit.directorName,
+    directorEmail: elements.auditDirectorEmailInput?.value.trim() || baseAudit.directorEmail,
     ownerId: ownerMatch?.id || baseAudit.ownerId,
     deadline: elements.auditDeadlineInput?.value || baseAudit.deadline,
     reminderCadenceDays: reminderCadence ?? baseAudit.reminderCadenceDays,
+    escalationRules,
     summary: elements.auditSummaryInput?.value.trim() || "",
+    backupAssigneeEmail:
+      elements.auditBackupAssigneeEmailInput?.value.trim() || baseAudit.backupAssigneeEmail,
   };
 }
 
@@ -310,9 +411,6 @@ function getAssigneeFromInput() {
 }
 
 function buildDefaultAuditLink(auditId) {
-  if (elements.auditAppLinkInput?.value.trim()) {
-    return elements.auditAppLinkInput.value.trim();
-  }
   const baseUrl = window.location?.origin || "https://followup.contoso.com";
   return `${baseUrl}/app/audits/${auditId}`;
 }
@@ -392,14 +490,25 @@ function resetCreateAuditForm() {
   if (elements.auditIdInput) elements.auditIdInput.value = getNextAuditId();
   if (elements.auditDateInput) elements.auditDateInput.value = today;
   if (elements.auditOwnerInput) elements.auditOwnerInput.value = getActiveUser()?.name || "";
+  if (elements.auditTypeSelect) elements.auditTypeSelect.value = "Safety";
+  if (elements.auditStoreCodeInput) elements.auditStoreCodeInput.value = "";
   if (elements.auditStoreInput) elements.auditStoreInput.value = "";
+  if (elements.auditStoreManagerInput) elements.auditStoreManagerInput.value = "";
+  if (elements.auditStoreManagerEmailInput) elements.auditStoreManagerEmailInput.value = "";
+  if (elements.auditRegionalManagerInput) elements.auditRegionalManagerInput.value = "";
+  if (elements.auditRegionalManagerEmailInput) elements.auditRegionalManagerEmailInput.value = "";
+  if (elements.auditDirectorInput) elements.auditDirectorInput.value = "";
+  if (elements.auditDirectorEmailInput) elements.auditDirectorEmailInput.value = "";
   if (elements.auditAssigneeInput) elements.auditAssigneeInput.value = "";
+  if (elements.auditBackupAssigneeEmailInput) {
+    elements.auditBackupAssigneeEmailInput.value = "";
+  }
   if (elements.auditDeadlineInput) elements.auditDeadlineInput.value = "";
   if (elements.auditReminderInput) elements.auditReminderInput.value = 7;
   if (elements.auditLanguageSelect) elements.auditLanguageSelect.value = "en";
-  if (elements.auditAppLinkInput) elements.auditAppLinkInput.value = "";
   if (elements.auditSummaryInput) elements.auditSummaryInput.value = "";
   if (elements.auditPhotosInput) elements.auditPhotosInput.value = "";
+  applyEscalationRulesToForm(defaultEscalationRules);
   if (elements.auditEmailPreview) {
     elements.auditEmailPreview.textContent = "Preview will appear here.";
   }
@@ -443,16 +552,39 @@ function normalizeDirectoryContact(contact) {
 function buildNotificationRecipients({ audit, assignee }) {
   const fallbackTask = audit?.tasks?.find((task) => task.assignedTo || task.assignedEmail);
   const storeManager = {
-    name: assignee?.name || fallbackTask?.assignedTo || "Store Manager",
-    email: assignee?.email || fallbackTask?.assignedEmail || "",
+    name:
+      assignee?.name ||
+      audit?.storeManagerName ||
+      fallbackTask?.assignedTo ||
+      "Store Manager",
+    email:
+      assignee?.email ||
+      audit?.storeManagerEmail ||
+      audit?.backupAssigneeEmail ||
+      fallbackTask?.assignedEmail ||
+      "",
     role: "Store Manager",
   };
-  const regionalManager = normalizeDirectoryContact(
-    m365Directory.contacts.find((contact) => contact.jobTitle === "Regional Manager"),
-  );
-  const director = normalizeDirectoryContact(
-    m365Directory.contacts.find((contact) => contact.jobTitle === "Audit Director"),
-  );
+  const regionalManager =
+    audit?.regionalManagerName || audit?.regionalManagerEmail
+      ? {
+          name: audit.regionalManagerName || "Regional Manager",
+          email: audit.regionalManagerEmail || "",
+          role: "Regional Manager",
+        }
+      : normalizeDirectoryContact(
+          m365Directory.contacts.find((contact) => contact.jobTitle === "Regional Manager"),
+        );
+  const director =
+    audit?.directorName || audit?.directorEmail
+      ? {
+          name: audit.directorName || "Director",
+          email: audit.directorEmail || "",
+          role: "Director",
+        }
+      : normalizeDirectoryContact(
+          m365Directory.contacts.find((contact) => contact.jobTitle === "Audit Director"),
+        );
   return {
     "store-manager": storeManager,
     "regional-manager": regionalManager,
@@ -527,10 +659,37 @@ function populateCreateAuditForm(audit) {
     const owner = getUserById(audit.ownerId);
     elements.auditOwnerInput.value = owner?.name || "";
   }
+  if (elements.auditTypeSelect) {
+    elements.auditTypeSelect.value = audit.auditType || "Safety";
+  }
+  if (elements.auditStoreCodeInput) {
+    elements.auditStoreCodeInput.value = audit.storeCode || "";
+  }
   if (elements.auditStoreInput) elements.auditStoreInput.value = audit.storeName || "";
+  if (elements.auditStoreManagerInput) {
+    elements.auditStoreManagerInput.value = audit.storeManagerName || "";
+  }
+  if (elements.auditStoreManagerEmailInput) {
+    elements.auditStoreManagerEmailInput.value = audit.storeManagerEmail || "";
+  }
+  if (elements.auditRegionalManagerInput) {
+    elements.auditRegionalManagerInput.value = audit.regionalManagerName || "";
+  }
+  if (elements.auditRegionalManagerEmailInput) {
+    elements.auditRegionalManagerEmailInput.value = audit.regionalManagerEmail || "";
+  }
+  if (elements.auditDirectorInput) {
+    elements.auditDirectorInput.value = audit.directorName || "";
+  }
+  if (elements.auditDirectorEmailInput) {
+    elements.auditDirectorEmailInput.value = audit.directorEmail || "";
+  }
   if (elements.auditAssigneeInput) {
     const primaryAssignee = audit.tasks.find((task) => task.assignedTo)?.assignedTo;
     elements.auditAssigneeInput.value = primaryAssignee || "";
+  }
+  if (elements.auditBackupAssigneeEmailInput) {
+    elements.auditBackupAssigneeEmailInput.value = audit.backupAssigneeEmail || "";
   }
   if (elements.auditDeadlineInput) {
     elements.auditDeadlineInput.value = audit.deadline || audit.tasks[0]?.dueDate || "";
@@ -544,9 +703,7 @@ function populateCreateAuditForm(audit) {
   if (elements.auditSummaryInput) {
     elements.auditSummaryInput.value = audit.summary || elements.auditSummaryInput.value;
   }
-  if (elements.auditAppLinkInput && !elements.auditAppLinkInput.value) {
-    elements.auditAppLinkInput.value = buildDefaultAuditLink(audit.id);
-  }
+  applyEscalationRulesToForm(audit.escalationRules);
 }
 
 function renderTaskList() {
@@ -1300,9 +1457,7 @@ function handleAuditEmailSend() {
   const draftAudit = buildAuditDraftFromForm(audit);
   const assignee = getAssigneeFromInput();
   const appLink = buildDefaultAuditLink(draftAudit.id || audit.id);
-  if (elements.auditAppLinkInput) {
-    elements.auditAppLinkInput.value = appLink;
-  }
+  Object.assign(audit, draftAudit);
   const template = generateAuditEmailTemplate({
     audit: draftAudit,
     assignee,
@@ -1396,9 +1551,7 @@ if (elements.saveDraftButton) {
     const draftAudit = buildAuditDraftFromForm(audit);
     const assignee = getAssigneeFromInput();
     const appLink = buildDefaultAuditLink(draftAudit.id || audit.id);
-    if (elements.auditAppLinkInput) {
-      elements.auditAppLinkInput.value = appLink;
-    }
+    Object.assign(audit, draftAudit);
     renderAuditEmailPreview({ audit: draftAudit, assignee, language, deadline, appLink });
     showDraftAlert("Draft saved locally.");
   });
@@ -1539,6 +1692,14 @@ if (elements.auditLanguageSelect) {
       deadline,
       appLink,
     });
+  });
+}
+
+if (elements.auditStoreCodeInput) {
+  elements.auditStoreCodeInput.addEventListener("change", (event) => {
+    const contact = getStoreContactByCode(event.target.value);
+    if (!contact) return;
+    populateStoreContactFields(contact);
   });
 }
 

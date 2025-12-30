@@ -146,15 +146,56 @@
               </label>
               <label class="field">
                 Audit Completed By
-                <input id="audit-owner-input" type="text" value="Jamie Chen" />
+                <input id="audit-owner-input" type="text" value="" />
+              </label>
+              <label class="field">
+                Audit Type
+                <select id="audit-type-select">
+                  <option value="Safety">Safety</option>
+                  <option value="Operations">Operations</option>
+                  <option value="Loss Prevention">Loss Prevention</option>
+                  <option value="Compliance">Compliance</option>
+                </select>
+              </label>
+              <label class="field">
+                Store Code
+                <input id="audit-store-code-input" type="text" value="ON-204" />
               </label>
               <label class="field">
                 Store Name
                 <input id="audit-store-input" type="text" value="Toronto Midtown" />
               </label>
               <label class="field">
+                Store Manager
+                <input id="audit-store-manager-input" type="text" value="Sam Thompson" />
+              </label>
+              <label class="field">
+                Store Manager Email
+                <input id="audit-store-manager-email-input" type="email" value="sam.thompson@contoso.com" />
+              </label>
+              <label class="field">
+                Regional Manager
+                <input id="audit-regional-manager-input" type="text" value="Kelly Rodgers" />
+              </label>
+              <label class="field">
+                Regional Manager Email
+                <input id="audit-regional-manager-email-input" type="email" value="kelly.rodgers@contoso.com" />
+              </label>
+              <label class="field">
+                Director
+                <input id="audit-director-input" type="text" value="Guillaume Veillette" />
+              </label>
+              <label class="field">
+                Director Email
+                <input id="audit-director-email-input" type="email" value="guillaume.veillette@bell.ca" />
+              </label>
+              <label class="field">
                 Assignee
                 <input id="audit-assignee-input" type="text" list="assignee-list" value="Sam Thompson" />
+              </label>
+              <label class="field">
+                Backup Assignee Email
+                <input id="audit-backup-assignee-email-input" type="email" value="ros-team@contoso.com" />
               </label>
               <label class="field">
                 Follow-up Due Date
@@ -162,7 +203,13 @@
               </label>
               <label class="field">
                 Reminder cadence (days before deadline)
-                <input id="audit-reminder-input" type="number" min="0" value="7" />
+                <select id="audit-reminder-input">
+                  <option value="14">14 days</option>
+                  <option value="7" selected>7 days</option>
+                  <option value="3">3 days</option>
+                  <option value="1">1 day</option>
+                  <option value="0">On deadline</option>
+                </select>
               </label>
               <label class="field">
                 Language
@@ -171,17 +218,38 @@
                   <option value="fr">French</option>
                 </select>
               </label>
-              <label class="field">
-                Audit App Link
-                <input
-                  id="audit-app-link-input"
-                  type="text"
-                  value="https://followup.contoso.com/app/audits/AUD-2025-001"
-                />
-              </label>
+            </div>
+            <div class="section">
+              <h4>Escalation recipients</h4>
+              <div class="grid two">
+                <label class="field field-inline">
+                  <input id="audit-reminder-sm" type="checkbox" checked />
+                  Reminders: Store Manager
+                </label>
+                <label class="field field-inline">
+                  <input id="audit-reminder-rm" type="checkbox" checked />
+                  Reminders: Regional Manager
+                </label>
+                <label class="field field-inline">
+                  <input id="audit-reminder-director" type="checkbox" />
+                  Reminders: Director
+                </label>
+                <label class="field field-inline">
+                  <input id="audit-deadline-sm" type="checkbox" checked />
+                  Deadline: Store Manager
+                </label>
+                <label class="field field-inline">
+                  <input id="audit-deadline-rm" type="checkbox" checked />
+                  Deadline: Regional Manager
+                </label>
+                <label class="field field-inline">
+                  <input id="audit-deadline-director" type="checkbox" checked />
+                  Deadline: Director
+                </label>
+              </div>
             </div>
             <label class="field">
-              AI Summary
+              Summary
               <textarea id="audit-summary-input" rows="4">Store passed 14/20 categories. Key gaps: emergency exit signage, stock room labeling, and fire extinguisher checks.</textarea>
             </label>
             <label class="field">

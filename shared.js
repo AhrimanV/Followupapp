@@ -62,6 +62,29 @@ export const m365Directory = {
   ],
 };
 
+export const storeContacts = [
+  {
+    storeCode: "ON-204",
+    storeName: "Toronto Midtown",
+    storeManager: "Sam Thompson",
+    storeManagerEmail: "sam.thompson@contoso.com",
+    regionalManager: "Kelly Rodgers",
+    regionalManagerEmail: "kelly.rodgers@contoso.com",
+    director: "Guillaume Veillette",
+    directorEmail: "guillaume.veillette@bell.ca",
+  },
+  {
+    storeCode: "QC-118",
+    storeName: "Montreal East",
+    storeManager: "Morgan Lee",
+    storeManagerEmail: "morgan.lee@contoso.com",
+    regionalManager: "Taylor Rivers",
+    regionalManagerEmail: "taylor.rivers@contoso.com",
+    director: "Guillaume Veillette",
+    directorEmail: "guillaume.veillette@bell.ca",
+  },
+];
+
 export const users = [
   {
     id: "usr-admin",
@@ -157,6 +180,7 @@ export const store = {
       id: "AUD-2025-001",
       storeCode: "ON-204",
       storeName: "Toronto Midtown",
+      auditType: "Safety",
       createdAt: "2025-02-12",
       ownerId: "usr-ros1",
       language: "en",
@@ -165,6 +189,13 @@ export const store = {
         reminderRecipients: ["store-manager", "regional-manager"],
         deadlineRecipients: ["store-manager", "regional-manager", "director"],
       },
+      storeManagerName: "Sam Thompson",
+      storeManagerEmail: "sam.thompson@contoso.com",
+      regionalManagerName: "Kelly Rodgers",
+      regionalManagerEmail: "kelly.rodgers@contoso.com",
+      directorName: "Guillaume Veillette",
+      directorEmail: "guillaume.veillette@bell.ca",
+      backupAssigneeEmail: "ros-team@contoso.com",
       categoryOptions: ["Store Appearance", "Loss Prevention", "QPU", "Safety"],
       tasks: [
         {
@@ -239,6 +270,7 @@ export const store = {
       id: "AUD-2025-002",
       storeCode: "QC-118",
       storeName: "Montreal East",
+      auditType: "Operations",
       createdAt: "2025-02-15",
       ownerId: "usr-ros2",
       language: "fr",
@@ -247,6 +279,13 @@ export const store = {
         reminderRecipients: ["store-manager", "regional-manager"],
         deadlineRecipients: ["store-manager", "regional-manager", "director"],
       },
+      storeManagerName: "Morgan Lee",
+      storeManagerEmail: "morgan.lee@contoso.com",
+      regionalManagerName: "Taylor Rivers",
+      regionalManagerEmail: "taylor.rivers@contoso.com",
+      directorName: "Guillaume Veillette",
+      directorEmail: "guillaume.veillette@bell.ca",
+      backupAssigneeEmail: "quebec-ops@contoso.com",
       categoryOptions: ["Store Appearance", "Loss Prevention", "QPU", "Safety"],
       tasks: [
         {
@@ -386,6 +425,7 @@ const auditEmailTemplates = {
     intro: "A new audit follow-up has been created and is ready for your review.",
     detailsLabel: "Audit details",
     summaryLabel: "Summary highlights",
+    typeLabel: "Audit type",
     tasksLabel: "Total tasks",
     dueLabel: "Due date",
     linkLabel: "Open audit",
@@ -397,6 +437,7 @@ const auditEmailTemplates = {
     intro: "Un nouveau suivi d'audit est prêt pour votre révision.",
     detailsLabel: "Détails de l'audit",
     summaryLabel: "Points saillants",
+    typeLabel: "Type d'audit",
     tasksLabel: "Nombre total de tâches",
     dueLabel: "Date d'échéance",
     linkLabel: "Ouvrir l'audit",
@@ -464,6 +505,12 @@ export function getM365SourceHint() {
 
 export function getUserById(id) {
   return users.find((user) => user.id === id) || null;
+}
+
+export function getStoreContactByCode(storeCode) {
+  if (!storeCode) return null;
+  const normalized = storeCode.trim().toLowerCase();
+  return storeContacts.find((contact) => contact.storeCode.toLowerCase() === normalized) || null;
 }
 
 export function getActiveUser() {
@@ -645,6 +692,7 @@ export function generateAuditEmailTemplate({ audit, assignee, language, deadline
     "",
     `${template.detailsLabel}:`,
     `• ${audit?.storeName || "Store"} (${audit?.storeCode || audit?.id || "Audit"})`,
+    audit?.auditType ? `• ${template.typeLabel}: ${audit.auditType}` : null,
     `• ${template.tasksLabel}: ${tasksCount}`,
     `• ${template.dueLabel}: ${formattedDeadline}`,
     owner ? `• ${locale === "fr" ? "Auditeur" : "Auditor"}: ${owner.name}` : null,
