@@ -13,6 +13,8 @@ const elements = {
   storeManagerAuditSelect: document.getElementById("store-manager-audit-select"),
   storeManagerLocaleSelect: document.getElementById("store-manager-locale"),
   storeManagerLanguageLabel: document.getElementById("store-manager-language-label"),
+  storeManagerTaskOverviewTitle: document.getElementById("store-manager-task-overview-title"),
+  storeManagerTaskOverviewSubtitle: document.getElementById("store-manager-task-overview-subtitle"),
   managerAuditHeader: document.getElementById("manager-audit-header"),
   managerTaskList: document.getElementById("manager-task-list"),
   messageReviewerButton: document.getElementById("store-manager-message-reviewer"),
