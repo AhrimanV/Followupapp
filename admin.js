@@ -53,6 +53,10 @@ const screenMeta = {
     title: "Home",
     subtitle: "Search and start a new audit follow-up.",
   },
+  "audit-list": {
+    title: "Audit List",
+    subtitle: "Find audits by status, auditor, or store.",
+  },
   "create-audit": {
     title: "Create Audit",
     subtitle: "Capture audit details and summary notes.",
@@ -148,12 +152,12 @@ const elements = {
   homeOpenAudits: document.getElementById("home-open-audits"),
   homeOverdueAudits: document.getElementById("home-overdue-audits"),
   homeAwaitingApproval: document.getElementById("home-awaiting-approval"),
-  homeFilterStatus: document.getElementById("home-filter-status"),
-  homeFilterOwner: document.getElementById("home-filter-owner"),
-  homeFilterStore: document.getElementById("home-filter-store"),
-  homeFilterStart: document.getElementById("home-filter-start"),
-  homeFilterEnd: document.getElementById("home-filter-end"),
-  homeAuditRows: document.getElementById("home-audit-rows"),
+  auditListFilterStatus: document.getElementById("audit-list-filter-status"),
+  auditListFilterAuditor: document.getElementById("audit-list-filter-auditor"),
+  auditListFilterStore: document.getElementById("audit-list-filter-store"),
+  auditListFilterStart: document.getElementById("audit-list-filter-start"),
+  auditListFilterEnd: document.getElementById("audit-list-filter-end"),
+  auditListRows: document.getElementById("audit-list-rows"),
   profileList: document.getElementById("profile-list"),
   assigneeList: document.getElementById("assignee-list"),
   sidebarMetrics: document.getElementById("sidebar-metrics"),
@@ -202,6 +206,7 @@ const elements = {
   auditEmailSendLog: document.getElementById("audit-email-send-log"),
   auditNotificationLog: document.getElementById("audit-notification-log"),
   homeContinueButton: document.getElementById("home-continue-button"),
+  homeFindAuditsButton: document.getElementById("home-find-audits-button"),
   newAuditButton: document.getElementById("new-audit-button"),
   saveDraftButton: document.getElementById("save-draft-button"),
   auditDraftAlert: document.getElementById("audit-draft-alert"),
@@ -842,7 +847,7 @@ function renderTaskList() {
     renderSidebarFooter();
     renderSidebarMetrics();
     renderHomeOverview();
-    renderHomeAudits();
+    renderAuditList();
     return;
   }
 
@@ -866,7 +871,7 @@ function renderTaskList() {
   renderSidebarFooter();
   renderSidebarMetrics();
   renderHomeOverview();
-  renderHomeAudits();
+  renderAuditList();
 }
 
 function renderTaskListAuditorFilter() {
@@ -1411,42 +1416,42 @@ function renderHomeOverview() {
   elements.homeAwaitingApproval.textContent = awaitingApproval;
 }
 
-function renderHomeFilters() {
-  if (!elements.homeFilterOwner || !elements.homeFilterStore) return;
+function renderAuditListFilters() {
+  if (!elements.auditListFilterAuditor || !elements.auditListFilterStore) return;
   const accessibleAudits = getAccessibleAudits();
-  const currentOwner = elements.homeFilterOwner.value || "all";
-  const currentStore = elements.homeFilterStore.value || "all";
+  const currentAuditor = elements.auditListFilterAuditor.value || "all";
+  const currentStore = elements.auditListFilterStore.value || "all";
 
-  elements.homeFilterOwner.innerHTML = "";
-  const ownerAllOption = document.createElement("option");
-  ownerAllOption.value = "all";
-  ownerAllOption.textContent = "All";
-  elements.homeFilterOwner.appendChild(ownerAllOption);
+  elements.auditListFilterAuditor.innerHTML = "";
+  const auditorAllOption = document.createElement("option");
+  auditorAllOption.value = "all";
+  auditorAllOption.textContent = "All";
+  elements.auditListFilterAuditor.appendChild(auditorAllOption);
 
-  const ownerMap = new Map();
+  const auditorMap = new Map();
   accessibleAudits.forEach((audit) => {
     const owner = getUserById(audit.ownerId);
     if (owner) {
-      ownerMap.set(owner.id, owner.name);
+      auditorMap.set(owner.id, owner.name);
     }
   });
 
-  [...ownerMap.entries()]
+  [...auditorMap.entries()]
     .sort((a, b) => a[1].localeCompare(b[1]))
     .forEach(([id, name]) => {
       const option = document.createElement("option");
       option.value = id;
       option.textContent = name;
-      elements.homeFilterOwner.appendChild(option);
+      elements.auditListFilterAuditor.appendChild(option);
     });
 
-  elements.homeFilterOwner.value = ownerMap.has(currentOwner) ? currentOwner : "all";
+  elements.auditListFilterAuditor.value = auditorMap.has(currentAuditor) ? currentAuditor : "all";
 
-  elements.homeFilterStore.innerHTML = "";
+  elements.auditListFilterStore.innerHTML = "";
   const storeAllOption = document.createElement("option");
   storeAllOption.value = "all";
   storeAllOption.textContent = "All";
-  elements.homeFilterStore.appendChild(storeAllOption);
+  elements.auditListFilterStore.appendChild(storeAllOption);
 
   const storeMap = new Map();
   accessibleAudits.forEach((audit) => {
@@ -1459,18 +1464,18 @@ function renderHomeFilters() {
       const option = document.createElement("option");
       option.value = code;
       option.textContent = `${name} (${code})`;
-      elements.homeFilterStore.appendChild(option);
+      elements.auditListFilterStore.appendChild(option);
     });
 
-  elements.homeFilterStore.value = storeMap.has(currentStore) ? currentStore : "all";
+  elements.auditListFilterStore.value = storeMap.has(currentStore) ? currentStore : "all";
 }
 
-function filterAuditsForHome() {
-  const statusFilter = elements.homeFilterStatus?.value || "all";
-  const ownerFilter = elements.homeFilterOwner?.value || "all";
-  const storeFilter = elements.homeFilterStore?.value || "all";
-  const startDate = elements.homeFilterStart?.value;
-  const endDate = elements.homeFilterEnd?.value;
+function filterAuditsForAuditList() {
+  const statusFilter = elements.auditListFilterStatus?.value || "all";
+  const auditorFilter = elements.auditListFilterAuditor?.value || "all";
+  const storeFilter = elements.auditListFilterStore?.value || "all";
+  const startDate = elements.auditListFilterStart?.value;
+  const endDate = elements.auditListFilterEnd?.value;
   const endDateValue = endDate ? new Date(`${endDate}T23:59:59`) : null;
 
   return getAccessibleAudits().filter((audit) => {
@@ -1478,7 +1483,7 @@ function filterAuditsForHome() {
     const overdue = isAuditOverdue(audit);
     const createdAt = new Date(audit.createdAt);
 
-    if (ownerFilter !== "all" && audit.ownerId !== ownerFilter) {
+    if (auditorFilter !== "all" && audit.ownerId !== auditorFilter) {
       return false;
     }
     if (storeFilter !== "all" && audit.storeCode !== storeFilter) {
@@ -1503,26 +1508,24 @@ function filterAuditsForHome() {
   });
 }
 
-function renderHomeAudits() {
-  if (!elements.homeAuditRows) return;
-  elements.homeAuditRows.innerHTML = "";
-  const filteredAudits = filterAuditsForHome();
+function renderAuditRows({ container, audits, emptyMessage }) {
+  container.innerHTML = "";
 
-  if (!filteredAudits.length) {
+  if (!audits.length) {
     const emptyRow = document.createElement("div");
     emptyRow.className = "table-row";
     emptyRow.innerHTML = `
-      <span>No audits match the filters.</span>
+      <span>${emptyMessage}</span>
       <span></span>
       <span></span>
       <span></span>
       <span></span>
     `;
-    elements.homeAuditRows.appendChild(emptyRow);
+    container.appendChild(emptyRow);
     return;
   }
 
-  filteredAudits.forEach((audit) => {
+  audits.forEach((audit) => {
     const owner = getUserById(audit.ownerId);
     const status = getAuditCompletionStatus(audit);
     const overdue = isAuditOverdue(audit);
@@ -1547,7 +1550,17 @@ function renderHomeAudits() {
       renderStoreManager();
       switchScreen("task-list");
     });
-    elements.homeAuditRows.appendChild(row);
+    container.appendChild(row);
+  });
+}
+
+function renderAuditList() {
+  if (!elements.auditListRows) return;
+  const filteredAudits = filterAuditsForAuditList();
+  renderAuditRows({
+    container: elements.auditListRows,
+    audits: filteredAudits,
+    emptyMessage: "No audits match the filters.",
   });
 }
 
@@ -1683,9 +1696,9 @@ function renderProfiles() {
       renderProfiles();
       updateNavigationVisibility();
       renderRoleLayout();
-      renderHomeFilters();
+      renderAuditListFilters();
       renderHomeOverview();
-      renderHomeAudits();
+      renderAuditList();
       applyTemplateEditorAccess();
     });
 
@@ -1710,6 +1723,7 @@ function updateNavigationVisibility() {
   renderRoleLayout();
   const navMap = {
     home: true,
+    "audit-list": user.role !== "store-manager",
     "create-audit": user.role !== "store-manager",
     "create-tasks": user.role !== "store-manager",
     "task-list": user.role !== "store-manager",
@@ -1888,7 +1902,10 @@ function switchScreen(target) {
   }
   if (target === "home") {
     renderHomeOverview();
-    renderHomeAudits();
+  }
+  if (target === "audit-list") {
+    renderAuditListFilters();
+    renderAuditList();
   }
   if (target === "admin") {
     renderAdminOverview();
@@ -1910,6 +1927,12 @@ if (elements.homeContinueButton) {
       populateCreateAuditForm(selectedAudit);
     }
     switchScreen("create-audit");
+  });
+}
+
+if (elements.homeFindAuditsButton) {
+  elements.homeFindAuditsButton.addEventListener("click", () => {
+    switchScreen("audit-list");
   });
 }
 
@@ -2148,7 +2171,7 @@ if (elements.taskDetailDueInput) {
     renderTaskList();
     renderReviewerQueue();
     renderHomeOverview();
-    renderHomeAudits();
+    renderAuditList();
   });
 }
 
@@ -2287,15 +2310,15 @@ if (elements.auditStoreCodeInput) {
 });
 
 [
-  elements.homeFilterStatus,
-  elements.homeFilterOwner,
-  elements.homeFilterStore,
-  elements.homeFilterStart,
-  elements.homeFilterEnd,
+  elements.auditListFilterStatus,
+  elements.auditListFilterAuditor,
+  elements.auditListFilterStore,
+  elements.auditListFilterStart,
+  elements.auditListFilterEnd,
 ]
   .filter(Boolean)
   .forEach((filter) => {
-    filter.addEventListener("change", renderHomeAudits);
+    filter.addEventListener("change", renderAuditList);
   });
 
 if (elements.taskListAuditorFilter) {
@@ -2318,7 +2341,7 @@ function init() {
   renderRoleLayout();
   renderAuditTypeSelectOptions();
   renderAdminFilters();
-  renderHomeFilters();
+  renderAuditListFilters();
   renderTaskListAuditorFilter();
   ensureSelectedAudit();
   renderSidebarFooter();
@@ -2350,7 +2373,7 @@ function init() {
   renderTaskPool();
   renderAdminOverview();
   renderHomeOverview();
-  renderHomeAudits();
+  renderAuditList();
   renderProfiles();
   applyTemplateEditorAccess();
 }

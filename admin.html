@@ -18,6 +18,7 @@
         </div>
         <nav class="nav">
           <button class="nav-item active" data-screen="home">Home</button>
+          <button class="nav-item" data-screen="audit-list">Audit List</button>
           <button class="nav-item" data-screen="create-audit">Create Audit</button>
           <button class="nav-item" data-screen="create-tasks">Create Templates</button>
           <button class="nav-item" data-screen="task-list">Task List</button>
@@ -65,43 +66,8 @@
           <div class="grid two">
             <div class="card">
               <h3>Find Audits</h3>
-              <div class="filter-grid">
-                <label class="field">
-                  Status
-                  <select id="home-filter-status">
-                    <option value="all">All</option>
-                    <option value="open">Open</option>
-                    <option value="overdue">Overdue</option>
-                    <option value="completed">Completed</option>
-                  </select>
-                </label>
-                <label class="field">
-                  Owner
-                  <select id="home-filter-owner"></select>
-                </label>
-                <label class="field">
-                  Store
-                  <select id="home-filter-store"></select>
-                </label>
-                <label class="field">
-                  From
-                  <input id="home-filter-start" type="date" />
-                </label>
-                <label class="field">
-                  To
-                  <input id="home-filter-end" type="date" />
-                </label>
-              </div>
-              <div class="table">
-                <div class="table-row header">
-                  <span>Audit</span>
-                  <span>Store</span>
-                  <span>Owner</span>
-                  <span>Tasks</span>
-                  <span>Status</span>
-                </div>
-                <div id="home-audit-rows"></div>
-              </div>
+              <p class="muted">Open the full audit list with status, auditor, and store filters.</p>
+              <button class="primary" id="home-find-audits-button">Open Audit List</button>
             </div>
             <div class="card">
               <h3>Recent Activity</h3>
@@ -128,6 +94,49 @@
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="content hidden" id="screen-audit-list">
+          <div class="card">
+            <h3>Audit List</h3>
+            <div class="filter-grid">
+              <label class="field">
+                Status
+                <select id="audit-list-filter-status">
+                  <option value="all">All</option>
+                  <option value="open">Open</option>
+                  <option value="overdue">Overdue</option>
+                  <option value="completed">Completed</option>
+                </select>
+              </label>
+              <label class="field">
+                Auditor
+                <select id="audit-list-filter-auditor"></select>
+              </label>
+              <label class="field">
+                Store
+                <select id="audit-list-filter-store"></select>
+              </label>
+              <label class="field">
+                From
+                <input id="audit-list-filter-start" type="date" />
+              </label>
+              <label class="field">
+                To
+                <input id="audit-list-filter-end" type="date" />
+              </label>
+            </div>
+            <div class="table">
+              <div class="table-row header">
+                <span>Audit</span>
+                <span>Store</span>
+                <span>Auditor</span>
+                <span>Tasks</span>
+                <span>Status</span>
+              </div>
+              <div id="audit-list-rows"></div>
             </div>
           </div>
         </section>
