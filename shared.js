@@ -1238,7 +1238,7 @@ export function renderStoreManagerView(elements, { onTaskUpdated } = {}) {
         <label class="field">
           ${strings.proofUploadLabel}
           <input type="file" multiple data-task-id="${task.id}" />
-          <p class="field-error hidden" data-task-file-error="${task.id}">${strings.proofUploadRequired}</p>
+          <p class="field-error hidden" id="task-file-error-${task.id}" role="alert" data-task-file-error="${task.id}">${strings.proofUploadRequired}</p>
         </label>
         `
             : `<p class="muted">${strings.proofOptionalNote}</p>`
@@ -1270,10 +1270,21 @@ export function renderStoreManagerView(elements, { onTaskUpdated } = {}) {
         if (fileError) {
           fileError.classList.remove("hidden");
         }
+        if (fileInput) {
+          fileInput.setAttribute("aria-invalid", "true");
+          if (fileError?.id) {
+            fileInput.setAttribute("aria-describedby", fileError.id);
+          }
+          fileInput.focus();
+        }
         return;
       }
       if (fileError) {
         fileError.classList.add("hidden");
+      }
+      if (fileInput) {
+        fileInput.removeAttribute("aria-invalid");
+        fileInput.removeAttribute("aria-describedby");
       }
       await api.uploadProof({ taskId: task.id, notes, photos });
       await api.submitProof({ taskId: task.id });
@@ -1287,6 +1298,8 @@ export function renderStoreManagerView(elements, { onTaskUpdated } = {}) {
       fileInput.addEventListener("change", () => {
         if (fileError && fileInput.files && fileInput.files.length > 0) {
           fileError.classList.add("hidden");
+          fileInput.removeAttribute("aria-invalid");
+          fileInput.removeAttribute("aria-describedby");
         }
       });
     }
