@@ -6,6 +6,7 @@ import {
   state,
   api,
   ensureSelectedAudit,
+  emailTemplateSettings,
   formatDate,
   formatDateRange,
   generateAuditTaskId,
@@ -167,6 +168,18 @@ const elements = {
   auditDeadlineRegionalManager: document.getElementById("audit-deadline-rm"),
   auditDeadlineDirector: document.getElementById("audit-deadline-director"),
   auditEmailPreview: document.getElementById("audit-email-preview"),
+  auditEmailSubjectTemplate: document.getElementById("audit-email-subject-template"),
+  auditEmailGreetingTemplate: document.getElementById("audit-email-greeting-template"),
+  auditEmailIntroTemplate: document.getElementById("audit-email-intro-template"),
+  auditEmailClosingTemplate: document.getElementById("audit-email-closing-template"),
+  auditEmailDetailsLabel: document.getElementById("audit-email-details-label"),
+  auditEmailSummaryLabel: document.getElementById("audit-email-summary-label"),
+  auditEmailTypeLabel: document.getElementById("audit-email-type-label"),
+  auditEmailTasksLabel: document.getElementById("audit-email-tasks-label"),
+  auditEmailDueLabel: document.getElementById("audit-email-due-label"),
+  auditEmailLinkLabel: document.getElementById("audit-email-link-label"),
+  auditEmailAuditorLabel: document.getElementById("audit-email-auditor-label"),
+  auditEmailSettingsSource: document.getElementById("audit-email-settings-source"),
   auditEmailSendLog: document.getElementById("audit-email-send-log"),
   auditNotificationLog: document.getElementById("audit-notification-log"),
   homeContinueButton: document.getElementById("home-continue-button"),
@@ -415,6 +428,78 @@ function buildDefaultAuditLink(auditId) {
   return `${baseUrl}/app/audits/${auditId}`;
 }
 
+function getEmailSettingsLocale() {
+  return elements.auditLanguageSelect?.value || "en";
+}
+
+function getEmailTemplateForLocale(locale) {
+  return emailTemplateSettings.templates[locale] || emailTemplateSettings.templates.en;
+}
+
+function renderEmailSettingsForm(locale = getEmailSettingsLocale()) {
+  const template = getEmailTemplateForLocale(locale);
+  if (elements.auditEmailSubjectTemplate) {
+    elements.auditEmailSubjectTemplate.value = template.subject || "";
+  }
+  if (elements.auditEmailGreetingTemplate) {
+    elements.auditEmailGreetingTemplate.value = template.greeting || "";
+  }
+  if (elements.auditEmailIntroTemplate) {
+    elements.auditEmailIntroTemplate.value = template.intro || "";
+  }
+  if (elements.auditEmailClosingTemplate) {
+    elements.auditEmailClosingTemplate.value = template.closing || "";
+  }
+  if (elements.auditEmailDetailsLabel) {
+    elements.auditEmailDetailsLabel.value = template.detailsLabel || "";
+  }
+  if (elements.auditEmailSummaryLabel) {
+    elements.auditEmailSummaryLabel.value = template.summaryLabel || "";
+  }
+  if (elements.auditEmailTypeLabel) {
+    elements.auditEmailTypeLabel.value = template.typeLabel || "";
+  }
+  if (elements.auditEmailTasksLabel) {
+    elements.auditEmailTasksLabel.value = template.tasksLabel || "";
+  }
+  if (elements.auditEmailDueLabel) {
+    elements.auditEmailDueLabel.value = template.dueLabel || "";
+  }
+  if (elements.auditEmailLinkLabel) {
+    elements.auditEmailLinkLabel.value = template.linkLabel || "";
+  }
+  if (elements.auditEmailAuditorLabel) {
+    elements.auditEmailAuditorLabel.value = template.auditorLabel || "";
+  }
+  if (elements.auditEmailSettingsSource) {
+    const powerAppsStatus = emailTemplateSettings.powerApps?.templateId
+      ? `PowerApps template ${emailTemplateSettings.powerApps.templateId}`
+      : "PowerApps sync placeholder";
+    elements.auditEmailSettingsSource.textContent = `Stored locally · ${powerAppsStatus}`;
+  }
+}
+
+function updateEmailTemplateSetting(key, value) {
+  const locale = getEmailSettingsLocale();
+  if (!emailTemplateSettings.templates[locale]) {
+    emailTemplateSettings.templates[locale] = { ...getEmailTemplateForLocale("en") };
+  }
+  emailTemplateSettings.templates[locale][key] = value;
+  const audit = getSelectedAudit();
+  if (!audit) return;
+  const draftAudit = buildAuditDraftFromForm(audit);
+  const assignee = getAssigneeFromInput();
+  const deadline = elements.auditDeadlineInput?.value || audit.deadline || "";
+  const appLink = buildDefaultAuditLink(draftAudit.id || audit.id);
+  renderAuditEmailPreview({
+    audit: draftAudit,
+    assignee,
+    language: getEmailSettingsLocale(),
+    deadline,
+    appLink,
+  });
+}
+
 function renderAuditEmailPreview({ audit, assignee, language, deadline, appLink }) {
   if (!elements.auditEmailPreview) return;
   const template = generateAuditEmailTemplate({ audit, assignee, language, deadline, appLink });
@@ -506,6 +591,7 @@ function resetCreateAuditForm() {
   if (elements.auditDeadlineInput) elements.auditDeadlineInput.value = "";
   if (elements.auditReminderInput) elements.auditReminderInput.value = 7;
   if (elements.auditLanguageSelect) elements.auditLanguageSelect.value = "en";
+  renderEmailSettingsForm("en");
   if (elements.auditSummaryInput) elements.auditSummaryInput.value = "";
   if (elements.auditPhotosInput) elements.auditPhotosInput.value = "";
   applyEscalationRulesToForm(defaultEscalationRules);
@@ -700,6 +786,7 @@ function populateCreateAuditForm(audit) {
   if (elements.auditLanguageSelect) {
     elements.auditLanguageSelect.value = getAuditLanguage(audit);
   }
+  renderEmailSettingsForm(getAuditLanguage(audit));
   if (elements.auditSummaryInput) {
     elements.auditSummaryInput.value = audit.summary || elements.auditSummaryInput.value;
   }
@@ -1681,6 +1768,7 @@ if (elements.auditLanguageSelect) {
     const audit = getSelectedAudit();
     if (!audit) return;
     audit.language = event.target.value;
+    renderEmailSettingsForm(audit.language);
     const draftAudit = buildAuditDraftFromForm(audit);
     const assignee = getAssigneeFromInput();
     const deadline = elements.auditDeadlineInput?.value || audit.deadline || "";
@@ -1694,6 +1782,26 @@ if (elements.auditLanguageSelect) {
     });
   });
 }
+
+[
+  { element: elements.auditEmailSubjectTemplate, key: "subject" },
+  { element: elements.auditEmailGreetingTemplate, key: "greeting" },
+  { element: elements.auditEmailIntroTemplate, key: "intro" },
+  { element: elements.auditEmailClosingTemplate, key: "closing" },
+  { element: elements.auditEmailDetailsLabel, key: "detailsLabel" },
+  { element: elements.auditEmailSummaryLabel, key: "summaryLabel" },
+  { element: elements.auditEmailTypeLabel, key: "typeLabel" },
+  { element: elements.auditEmailTasksLabel, key: "tasksLabel" },
+  { element: elements.auditEmailDueLabel, key: "dueLabel" },
+  { element: elements.auditEmailLinkLabel, key: "linkLabel" },
+  { element: elements.auditEmailAuditorLabel, key: "auditorLabel" },
+]
+  .filter(({ element }) => element)
+  .forEach(({ element, key }) => {
+    element.addEventListener("input", (event) => {
+      updateEmailTemplateSetting(key, event.target.value);
+    });
+  });
 
 if (elements.auditStoreCodeInput) {
   elements.auditStoreCodeInput.addEventListener("change", (event) => {
@@ -1743,6 +1851,7 @@ function init() {
   renderSidebarFooter();
   renderSidebarMetrics();
   syncSelectedTask();
+  renderEmailSettingsForm();
   const selectedAudit = getSelectedAudit();
   if (selectedAudit) {
     populateCreateAuditForm(selectedAudit);

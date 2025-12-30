@@ -418,10 +418,10 @@ const storeManagerLocaleContent = {
   },
 };
 
-const auditEmailTemplates = {
+const defaultAuditEmailTemplates = {
   en: {
-    subject: (audit) => `Audit follow-up: ${audit.storeName} (${audit.storeCode || audit.id})`,
-    greeting: (assigneeName) => `Hi ${assigneeName || "there"},`,
+    subject: "Audit follow-up: {storeName} ({storeCode})",
+    greeting: "Hi {assigneeName},",
     intro: "A new audit follow-up has been created and is ready for your review.",
     detailsLabel: "Audit details",
     summaryLabel: "Summary highlights",
@@ -429,11 +429,12 @@ const auditEmailTemplates = {
     tasksLabel: "Total tasks",
     dueLabel: "Due date",
     linkLabel: "Open audit",
+    auditorLabel: "Auditor",
     closing: "Thanks for keeping the follow-up on track.",
   },
   fr: {
-    subject: (audit) => `Suivi d'audit : ${audit.storeName} (${audit.storeCode || audit.id})`,
-    greeting: (assigneeName) => `Bonjour ${assigneeName || ""}`.trim() + ",",
+    subject: "Suivi d'audit : {storeName} ({storeCode})",
+    greeting: "Bonjour {assigneeName},",
     intro: "Un nouveau suivi d'audit est prêt pour votre révision.",
     detailsLabel: "Détails de l'audit",
     summaryLabel: "Points saillants",
@@ -441,9 +442,45 @@ const auditEmailTemplates = {
     tasksLabel: "Nombre total de tâches",
     dueLabel: "Date d'échéance",
     linkLabel: "Ouvrir l'audit",
+    auditorLabel: "Auditeur",
     closing: "Merci de maintenir le suivi sur la bonne voie.",
   },
 };
+
+export const emailTemplateSettings = {
+  templates: JSON.parse(JSON.stringify(defaultAuditEmailTemplates)),
+  powerApps: {
+    source: "local",
+    templateId: null,
+    lastSyncedAt: null,
+  },
+};
+
+function applyTemplateVariables(text, variables) {
+  if (!text) return "";
+  return text.replace(/\{(\w+)\}/g, (match, key) =>
+    Object.hasOwn(variables, key) ? String(variables[key]) : match,
+  );
+}
+
+function getEmailTemplate(locale) {
+  const baseTemplate = defaultAuditEmailTemplates.en;
+  const localeTemplate =
+    emailTemplateSettings.templates[locale] || emailTemplateSettings.templates.en;
+  return {
+    subject: localeTemplate.subject || baseTemplate.subject,
+    greeting: localeTemplate.greeting || baseTemplate.greeting,
+    intro: localeTemplate.intro || baseTemplate.intro,
+    detailsLabel: localeTemplate.detailsLabel || baseTemplate.detailsLabel,
+    summaryLabel: localeTemplate.summaryLabel || baseTemplate.summaryLabel,
+    typeLabel: localeTemplate.typeLabel || baseTemplate.typeLabel,
+    tasksLabel: localeTemplate.tasksLabel || baseTemplate.tasksLabel,
+    dueLabel: localeTemplate.dueLabel || baseTemplate.dueLabel,
+    linkLabel: localeTemplate.linkLabel || baseTemplate.linkLabel,
+    auditorLabel: localeTemplate.auditorLabel || baseTemplate.auditorLabel,
+    closing: localeTemplate.closing || baseTemplate.closing,
+  };
+}
 
 export const api = {
   async uploadProof({ taskId, notes, photos }) {
@@ -678,29 +715,49 @@ function formatAuditEmailDeadline(deadline, language) {
 
 export function generateAuditEmailTemplate({ audit, assignee, language, deadline, appLink }) {
   const locale = language || getAuditLanguage(audit);
-  const template = auditEmailTemplates[locale] || auditEmailTemplates.en;
   const assigneeName = assignee?.name || assignee?.displayName || assignee?.email || "";
   const owner = getUserById(audit?.ownerId);
   const tasksCount = audit?.tasks?.length ?? 0;
   const summary = audit?.summary || "";
   const formattedDeadline = formatAuditEmailDeadline(deadline, locale);
-  const subject = template.subject(audit);
+  const template = getEmailTemplate(locale);
+  const templateVariables = {
+    storeName: audit?.storeName || "Store",
+    storeCode: audit?.storeCode || audit?.id || "Audit",
+    auditId: audit?.id || "",
+    assigneeName,
+    auditType: audit?.auditType || "",
+    tasksCount,
+    dueDate: formattedDeadline,
+    auditorName: owner?.name || "",
+    appLink: appLink || "",
+    summary,
+  };
+  const subject = applyTemplateVariables(template.subject, templateVariables);
   const bodyLines = [
-    template.greeting(assigneeName),
+    applyTemplateVariables(template.greeting, templateVariables),
     "",
-    template.intro,
+    applyTemplateVariables(template.intro, templateVariables),
     "",
-    `${template.detailsLabel}:`,
-    `• ${audit?.storeName || "Store"} (${audit?.storeCode || audit?.id || "Audit"})`,
-    audit?.auditType ? `• ${template.typeLabel}: ${audit.auditType}` : null,
-    `• ${template.tasksLabel}: ${tasksCount}`,
-    `• ${template.dueLabel}: ${formattedDeadline}`,
-    owner ? `• ${locale === "fr" ? "Auditeur" : "Auditor"}: ${owner.name}` : null,
-    appLink ? `• ${template.linkLabel}: ${appLink}` : null,
+    `${applyTemplateVariables(template.detailsLabel, templateVariables)}:`,
+    `• ${applyTemplateVariables("{storeName} ({storeCode})", templateVariables)}`,
+    audit?.auditType
+      ? `• ${applyTemplateVariables(template.typeLabel, templateVariables)}: ${templateVariables.auditType}`
+      : null,
+    `• ${applyTemplateVariables(template.tasksLabel, templateVariables)}: ${templateVariables.tasksCount}`,
+    `• ${applyTemplateVariables(template.dueLabel, templateVariables)}: ${templateVariables.dueDate}`,
+    owner
+      ? `• ${applyTemplateVariables(template.auditorLabel, templateVariables)}: ${templateVariables.auditorName}`
+      : null,
+    appLink
+      ? `• ${applyTemplateVariables(template.linkLabel, templateVariables)}: ${templateVariables.appLink}`
+      : null,
     "",
-    summary ? `${template.summaryLabel}:\n${summary}` : null,
+    summary
+      ? `${applyTemplateVariables(template.summaryLabel, templateVariables)}:\n${summary}`
+      : null,
     "",
-    template.closing,
+    applyTemplateVariables(template.closing, templateVariables),
   ].filter(Boolean);
 
   return {

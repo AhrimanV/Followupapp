@@ -266,6 +266,63 @@
             </div>
           </div>
           <div class="card">
+            <h3>Email Settings</h3>
+            <p class="muted">
+              Update the email copy used in the preview. Use placeholders like {storeName},
+              {storeCode}, {assigneeName}, {auditType}, {tasksCount}, {dueDate}, {auditorName},
+              {appLink}, and {summary}.
+            </p>
+            <div class="grid two">
+              <label class="field">
+                Subject template
+                <input id="audit-email-subject-template" type="text" />
+              </label>
+              <label class="field">
+                Greeting template
+                <input id="audit-email-greeting-template" type="text" />
+              </label>
+              <label class="field">
+                Intro text
+                <textarea id="audit-email-intro-template" rows="2"></textarea>
+              </label>
+              <label class="field">
+                Closing text
+                <textarea id="audit-email-closing-template" rows="2"></textarea>
+              </label>
+            </div>
+            <div class="grid two">
+              <label class="field">
+                Details label
+                <input id="audit-email-details-label" type="text" />
+              </label>
+              <label class="field">
+                Summary label
+                <input id="audit-email-summary-label" type="text" />
+              </label>
+              <label class="field">
+                Type label
+                <input id="audit-email-type-label" type="text" />
+              </label>
+              <label class="field">
+                Tasks label
+                <input id="audit-email-tasks-label" type="text" />
+              </label>
+              <label class="field">
+                Due date label
+                <input id="audit-email-due-label" type="text" />
+              </label>
+              <label class="field">
+                Link label
+                <input id="audit-email-link-label" type="text" />
+              </label>
+              <label class="field">
+                Auditor label
+                <input id="audit-email-auditor-label" type="text" />
+              </label>
+            </div>
+            <p class="muted" id="audit-email-settings-source">Stored locally · PowerApps sync placeholder</p>
+          </div>
+          <div class="card">
             <h3>Audit Email Preview</h3>
             <p class="muted">Generated when you save the audit follow-up.</p>
             <pre id="audit-email-preview" class="preview-card">Preview will appear here.</pre>
