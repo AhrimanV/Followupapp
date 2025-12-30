@@ -340,11 +340,11 @@
             <p class="muted">Assign task templates to this audit. Drag to reorder and add manager notes.</p>
             <div class="task-assignment">
               <label class="field">
-                Add task template
-                <select id="existing-task-select"></select>
+                Task category
+                <select id="existing-task-category"></select>
               </label>
-              <button class="secondary" id="add-existing-task">Add template</button>
             </div>
+            <div class="task-template-list" id="existing-task-list"></div>
             <div class="task-summary">
               <div class="task-summary-header">
                 <strong>Audit task summary</strong>
@@ -433,6 +433,28 @@
                 <li><span>Status</span><strong id="detail-task-status"></strong></li>
                 <li><span>Submission #</span><strong id="detail-task-submission"></strong></li>
               </ul>
+              <div class="section">
+                <h4>Edit task</h4>
+                <div class="grid two">
+                  <label class="field">
+                    Due date
+                    <input id="detail-task-due-input" type="date" />
+                  </label>
+                  <label class="field">
+                    Category
+                    <select id="detail-task-category-input"></select>
+                  </label>
+                  <label class="field">
+                    Assign to
+                    <input id="detail-task-assignee-input" type="text" list="assignee-list" />
+                  </label>
+                  <label class="field field-inline">
+                    <input id="detail-task-proof-input" type="checkbox" />
+                    Proof required
+                  </label>
+                </div>
+                <button class="secondary" id="remove-task-from-audit">Remove from audit</button>
+              </div>
               <label class="field">
                 Manager Notes
                 <textarea id="detail-manager-notes" rows="3" placeholder="Add instructions for the store manager..."></textarea>
