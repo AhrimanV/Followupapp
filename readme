@@ -10,6 +10,11 @@ Key files
 - `app.js`: Client-side behavior and demo data handling.
 - `build-package.md`: Packaging/build notes for distributing the static app.
 
+Tests and fixtures
+- `tests/fixtures/`: Mock audit/task data fixtures.
+- `tests/validate-fixtures.mjs`: Minimal fixture validation script.
+- `tests/README.md`: How to run fixture checks and manual QA.
+
 Limitations
 - Static demo data only (no persistence).
 - No backend/API; everything runs in the browser.

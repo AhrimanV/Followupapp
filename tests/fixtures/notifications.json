@@ -1,0 +1,30 @@
+{
+  "notifications": [
+    {
+      "id": "NTF-TEST-001",
+      "type": "AUDIT_CREATED",
+      "auditId": "AUD-TEST-001",
+      "recipientRoles": ["store-manager", "regional-manager"],
+      "sentAt": "2025-03-10T09:20:00Z",
+      "message": "Audit AUD-TEST-001 has been created for NYC Flagship."
+    },
+    {
+      "id": "NTF-TEST-002",
+      "type": "TASK_ASSIGNED",
+      "auditId": "AUD-TEST-001",
+      "taskId": "AT-TEST-1001",
+      "recipientEmails": ["alex.rivera@example.com"],
+      "sentAt": "2025-03-10T09:25:00Z",
+      "message": "You have been assigned task AT-TEST-1001."
+    },
+    {
+      "id": "NTF-TEST-003",
+      "type": "PROOF_SUBMITTED",
+      "auditId": "AUD-TEST-001",
+      "taskId": "AT-TEST-1002",
+      "recipientRoles": ["auditor", "regional-manager"],
+      "sentAt": "2025-03-12T14:40:00Z",
+      "message": "Proof submitted for task AT-TEST-1002."
+    }
+  ]
+}

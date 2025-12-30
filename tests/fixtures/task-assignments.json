@@ -1,0 +1,28 @@
+{
+  "assignments": [
+    {
+      "auditId": "AUD-TEST-001",
+      "taskId": "AT-TEST-1001",
+      "assignee": {
+        "id": "usr-sm-qa",
+        "name": "Alex Rivera",
+        "email": "alex.rivera@example.com",
+        "role": "store-manager"
+      },
+      "assignedAt": "2025-03-10T09:10:00Z",
+      "status": "NOT_STARTED"
+    },
+    {
+      "auditId": "AUD-TEST-001",
+      "taskId": "AT-TEST-1002",
+      "assignee": {
+        "id": "usr-sm-qa",
+        "name": "Alex Rivera",
+        "email": "alex.rivera@example.com",
+        "role": "store-manager"
+      },
+      "assignedAt": "2025-03-10T09:15:00Z",
+      "status": "PROOF_SUBMITTED"
+    }
+  ]
+}
