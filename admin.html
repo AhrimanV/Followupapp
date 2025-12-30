@@ -45,57 +45,87 @@
         </header>
 
         <section class="content" id="screen-home">
-          <div class="grid two">
-            <div class="card">
-              <h3>Quick Search</h3>
-              <label class="field">
-                Store / Dealer Code
-                <input type="text" value="ON-204" />
-              </label>
-              <label class="field">
-                Audit Date
-                <input type="date" value="2025-02-14" />
-              </label>
-              <button class="primary full" id="home-continue-button">Continue</button>
+          <div class="grid three">
+            <div class="card metric-card">
+              <p class="eyebrow">Open Audits</p>
+              <strong class="metric-value" id="home-open-audits">0</strong>
+              <p class="muted">Audits still in progress.</p>
             </div>
-            <div class="card summary">
-              <h3>Store Snapshot</h3>
-              <ul>
-                <li><span>Location</span><strong>Toronto Midtown</strong></li>
-                <li><span>Store Manager</span><strong>Sam Thompson</strong></li>
-                <li><span>RM</span><strong>Kelly Rodgers</strong></li>
-                <li><span>Open Tasks</span><strong>6</strong></li>
-                <li><span>Overdue</span><strong class="danger">2</strong></li>
-              </ul>
-              <div class="pill-group">
-                <span class="pill">Retail</span>
-                <span class="pill">Tier 2</span>
-                <span class="pill">Ontario</span>
-              </div>
+            <div class="card metric-card">
+              <p class="eyebrow">Overdue Audits</p>
+              <strong class="metric-value danger" id="home-overdue-audits">0</strong>
+              <p class="muted">Audits with overdue tasks.</p>
+            </div>
+            <div class="card metric-card">
+              <p class="eyebrow">Waiting Approval</p>
+              <strong class="metric-value" id="home-awaiting-approval">0</strong>
+              <p class="muted">Proofs pending reviewer action.</p>
             </div>
           </div>
-          <div class="card">
-            <h3>Recent Activity</h3>
-            <div class="timeline">
-              <div class="timeline-item">
-                <span class="dot"></span>
-                <div>
-                  <p><strong>Proof submitted</strong> for “Emergency Exit signage”</p>
-                  <span>2 hours ago · Submission #2</span>
-                </div>
+          <div class="grid two">
+            <div class="card">
+              <h3>Find Audits</h3>
+              <div class="filter-grid">
+                <label class="field">
+                  Status
+                  <select id="home-filter-status">
+                    <option value="all">All</option>
+                    <option value="open">Open</option>
+                    <option value="overdue">Overdue</option>
+                    <option value="completed">Completed</option>
+                  </select>
+                </label>
+                <label class="field">
+                  Owner
+                  <select id="home-filter-owner"></select>
+                </label>
+                <label class="field">
+                  Store
+                  <select id="home-filter-store"></select>
+                </label>
+                <label class="field">
+                  From
+                  <input id="home-filter-start" type="date" />
+                </label>
+                <label class="field">
+                  To
+                  <input id="home-filter-end" type="date" />
+                </label>
               </div>
-              <div class="timeline-item">
-                <span class="dot warning"></span>
-                <div>
-                  <p><strong>Reminder sent</strong> to SM & RM for 3 tasks due in 7 days</p>
-                  <span>Yesterday · D-7 rule</span>
+              <div class="table">
+                <div class="table-row header">
+                  <span>Audit</span>
+                  <span>Store</span>
+                  <span>Owner</span>
+                  <span>Tasks</span>
+                  <span>Status</span>
                 </div>
+                <div id="home-audit-rows"></div>
               </div>
-              <div class="timeline-item">
-                <span class="dot success"></span>
-                <div>
-                  <p><strong>Audit AUD-2025-001 created</strong></p>
-                  <span>Feb 12, 2025</span>
+            </div>
+            <div class="card">
+              <h3>Recent Activity</h3>
+              <div class="timeline">
+                <div class="timeline-item">
+                  <span class="dot"></span>
+                  <div>
+                    <p><strong>Proof submitted</strong> for “Emergency Exit signage”</p>
+                    <span>2 hours ago · Submission #2</span>
+                  </div>
+                </div>
+                <div class="timeline-item">
+                  <span class="dot warning"></span>
+                  <div>
+                    <p><strong>Reminder sent</strong> to SM & RM for 3 tasks due in 7 days</p>
+                    <span>Yesterday · D-7 rule</span>
+                  </div>
+                </div>
+                <div class="timeline-item">
+                  <span class="dot success"></span>
+                  <div>
+                    <p><strong>Audit AUD-2025-001 created</strong></p>
+                    <span>Feb 12, 2025</span>
+                  </div>
                 </div>
               </div>
             </div>
