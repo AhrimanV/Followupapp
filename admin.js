@@ -136,12 +136,14 @@ const elements = {
   auditStoreInput: document.getElementById("audit-store-input"),
   auditAssigneeInput: document.getElementById("audit-assignee-input"),
   auditDeadlineInput: document.getElementById("audit-deadline-input"),
+  auditReminderInput: document.getElementById("audit-reminder-input"),
   auditLanguageSelect: document.getElementById("audit-language-select"),
   auditAppLinkInput: document.getElementById("audit-app-link-input"),
   auditSummaryInput: document.getElementById("audit-summary-input"),
   auditPhotosInput: document.getElementById("audit-photos-input"),
   auditEmailPreview: document.getElementById("audit-email-preview"),
   auditEmailSendLog: document.getElementById("audit-email-send-log"),
+  auditNotificationLog: document.getElementById("audit-notification-log"),
 };
 
 const storeManagerElements = {
@@ -240,12 +242,15 @@ function buildAuditDraftFromForm(audit) {
       user.name.toLowerCase() === ownerLookupValue?.toLowerCase() ||
       user.email.toLowerCase() === ownerLookupValue?.toLowerCase(),
   );
+  const reminderCadence = getReminderCadenceFromInput(baseAudit);
   return {
     ...baseAudit,
     id: elements.auditIdInput?.value.trim() || baseAudit.id,
     createdAt: elements.auditDateInput?.value || baseAudit.createdAt,
     storeName: elements.auditStoreInput?.value.trim() || baseAudit.storeName,
     ownerId: ownerMatch?.id || baseAudit.ownerId,
+    deadline: elements.auditDeadlineInput?.value || baseAudit.deadline,
+    reminderCadenceDays: reminderCadence ?? baseAudit.reminderCadenceDays,
     summary: elements.auditSummaryInput?.value.trim() || "",
   };
 }
@@ -299,6 +304,137 @@ function renderAuditEmailSendLog(auditId) {
   });
 }
 
+function renderAuditNotificationLog(auditId) {
+  if (!elements.auditNotificationLog) return;
+  const entries = store.auditNotifications.filter((entry) => entry.auditId === auditId);
+  if (!entries.length) {
+    elements.auditNotificationLog.textContent = "No notifications dispatched yet.";
+    return;
+  }
+  elements.auditNotificationLog.innerHTML = "";
+  entries.slice(0, 4).forEach((entry) => {
+    const item = document.createElement("div");
+    item.className = "audit-email-log-item";
+    const sentAt = new Date(entry.sentAt).toLocaleString("en-US");
+    const recipientNames = entry.recipients.map((recipient) => recipient.name).join(", ");
+    const typeLabel =
+      entry.type === "reminder"
+        ? `Reminder (D-${entry.cadenceDays ?? "?"})`
+        : "Deadline escalation";
+    item.innerHTML = `
+      <strong>${sentAt}</strong>
+      <div>${typeLabel} · ${recipientNames || "No recipients"}</div>
+      <div class="muted">${entry.message}</div>
+    `;
+    elements.auditNotificationLog.appendChild(item);
+  });
+}
+
+const defaultEscalationRules = {
+  reminderRecipients: ["store-manager", "regional-manager"],
+  deadlineRecipients: ["store-manager", "regional-manager", "director"],
+};
+
+function ensureEscalationRules(audit) {
+  if (!audit?.escalationRules) {
+    return { ...defaultEscalationRules };
+  }
+  return {
+    reminderRecipients:
+      audit.escalationRules.reminderRecipients || defaultEscalationRules.reminderRecipients,
+    deadlineRecipients:
+      audit.escalationRules.deadlineRecipients || defaultEscalationRules.deadlineRecipients,
+  };
+}
+
+function normalizeDirectoryContact(contact) {
+  if (!contact) return null;
+  return {
+    name: contact.displayName,
+    email: contact.email,
+    role: contact.jobTitle,
+  };
+}
+
+function buildNotificationRecipients({ audit, assignee }) {
+  const fallbackTask = audit?.tasks?.find((task) => task.assignedTo || task.assignedEmail);
+  const storeManager = {
+    name: assignee?.name || fallbackTask?.assignedTo || "Store Manager",
+    email: assignee?.email || fallbackTask?.assignedEmail || "",
+    role: "Store Manager",
+  };
+  const regionalManager = normalizeDirectoryContact(
+    m365Directory.contacts.find((contact) => contact.jobTitle === "Regional Manager"),
+  );
+  const director = normalizeDirectoryContact(
+    m365Directory.contacts.find((contact) => contact.jobTitle === "Audit Director"),
+  );
+  return {
+    "store-manager": storeManager,
+    "regional-manager": regionalManager,
+    director,
+  };
+}
+
+function resolveNotificationRecipients(ruleList, recipientMap) {
+  if (!ruleList?.length) return [];
+  return ruleList.map((roleKey) => recipientMap[roleKey]).filter(Boolean);
+}
+
+function dispatchMockAuditNotifications({ audit, assignee, reminderCadenceDays, deadline }) {
+  if (!audit) return;
+  const escalationRules = ensureEscalationRules(audit);
+  audit.escalationRules = escalationRules;
+  const recipients = buildNotificationRecipients({ audit, assignee });
+  const reminderRecipients = resolveNotificationRecipients(
+    escalationRules.reminderRecipients,
+    recipients,
+  );
+  const deadlineRecipients = resolveNotificationRecipients(
+    escalationRules.deadlineRecipients,
+    recipients,
+  );
+  const sentAt = new Date().toISOString();
+  const formattedDeadline = deadline ? formatDate(deadline) : "unscheduled deadline";
+  const reminderLabel =
+    reminderCadenceDays !== null && reminderCadenceDays !== undefined
+      ? `D-${reminderCadenceDays}`
+      : "Reminder";
+
+  if (reminderRecipients.length) {
+    store.auditNotifications.unshift({
+      id: `NTF-${store.auditNotifications.length + 1}`,
+      auditId: audit.id,
+      type: "reminder",
+      sentAt,
+      cadenceDays: reminderCadenceDays,
+      recipients: reminderRecipients,
+      message: `Sent ${reminderLabel} reminder for ${formattedDeadline}.`,
+    });
+  }
+
+  if (deadlineRecipients.length) {
+    store.auditNotifications.unshift({
+      id: `NTF-${store.auditNotifications.length + 1}`,
+      auditId: audit.id,
+      type: "deadline",
+      sentAt,
+      cadenceDays: reminderCadenceDays,
+      recipients: deadlineRecipients,
+      message: `Escalated at deadline (${formattedDeadline}).`,
+    });
+  }
+}
+
+function getReminderCadenceFromInput(audit) {
+  const value = elements.auditReminderInput?.value;
+  if (value === undefined || value === null || value === "") {
+    return audit?.reminderCadenceDays ?? null;
+  }
+  const parsed = Number.parseInt(value, 10);
+  return Number.isNaN(parsed) ? audit?.reminderCadenceDays ?? null : parsed;
+}
+
 function populateCreateAuditForm(audit) {
   if (!audit) return;
   if (elements.auditIdInput) elements.auditIdInput.value = audit.id;
@@ -314,6 +450,9 @@ function populateCreateAuditForm(audit) {
   }
   if (elements.auditDeadlineInput) {
     elements.auditDeadlineInput.value = audit.deadline || audit.tasks[0]?.dueDate || "";
+  }
+  if (elements.auditReminderInput) {
+    elements.auditReminderInput.value = audit.reminderCadenceDays ?? 7;
   }
   if (elements.auditLanguageSelect) {
     elements.auditLanguageSelect.value = getAuditLanguage(audit);
@@ -975,6 +1114,10 @@ function handleAuditEmailSend() {
   audit.language = language;
   const deadline = elements.auditDeadlineInput?.value || "";
   audit.deadline = deadline;
+  const reminderCadenceDays = getReminderCadenceFromInput(audit);
+  if (reminderCadenceDays !== null && reminderCadenceDays !== undefined) {
+    audit.reminderCadenceDays = reminderCadenceDays;
+  }
   if (elements.auditSummaryInput) {
     audit.summary = elements.auditSummaryInput.value.trim();
   }
@@ -1002,6 +1145,13 @@ function handleAuditEmailSend() {
     body: template.body,
   });
   renderAuditEmailSendLog(draftAudit.id || audit.id);
+  dispatchMockAuditNotifications({
+    audit: draftAudit,
+    assignee,
+    reminderCadenceDays: draftAudit.reminderCadenceDays,
+    deadline,
+  });
+  renderAuditNotificationLog(draftAudit.id || audit.id);
 }
 
 function switchScreen(target) {
@@ -1215,6 +1365,7 @@ function init() {
       appLink: buildDefaultAuditLink(selectedAudit.id),
     });
     renderAuditEmailSendLog(selectedAudit.id);
+    renderAuditNotificationLog(selectedAudit.id);
   }
   renderTaskList();
   renderTaskDetail();

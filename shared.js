@@ -160,6 +160,11 @@ export const store = {
       createdAt: "2025-02-12",
       ownerId: "usr-ros1",
       language: "en",
+      reminderCadenceDays: 7,
+      escalationRules: {
+        reminderRecipients: ["store-manager", "regional-manager"],
+        deadlineRecipients: ["store-manager", "regional-manager", "director"],
+      },
       categoryOptions: ["Store Appearance", "Loss Prevention", "QPU", "Safety"],
       tasks: [
         {
@@ -237,6 +242,11 @@ export const store = {
       createdAt: "2025-02-15",
       ownerId: "usr-ros2",
       language: "fr",
+      reminderCadenceDays: 5,
+      escalationRules: {
+        reminderRecipients: ["store-manager", "regional-manager"],
+        deadlineRecipients: ["store-manager", "regional-manager", "director"],
+      },
       categoryOptions: ["Store Appearance", "Loss Prevention", "QPU", "Safety"],
       tasks: [
         {
@@ -299,6 +309,7 @@ export const store = {
     },
   ],
   auditEmailSends: [],
+  auditNotifications: [],
 };
 
 export const state = {
