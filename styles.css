@@ -726,10 +726,46 @@ button.full {
 
 .task-assignment {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr);
   gap: 12px;
   align-items: end;
   margin-bottom: 16px;
+}
+
+.task-template-list {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.task-template-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.task-template-item:hover {
+  border-color: #60a5fa;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
+  transform: translateY(-1px);
+}
+
+.task-template-item strong {
+  display: block;
+}
+
+.task-template-item small {
+  color: #6b7280;
 }
 
 .task-summary {
@@ -764,61 +800,42 @@ button.full {
 }
 
 .audit-task-list {
-  display: grid;
-  gap: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
-.audit-task-card {
-  border-radius: 14px;
-  border: 1px solid #e5e7eb;
-  padding: 14px;
-  background: #f8fafc;
-  display: grid;
-  gap: 12px;
+.audit-task-pill {
+  border-radius: 999px;
+  border: 1px solid #cbd5f5;
+  background: #eef2ff;
+  color: #1f2937;
+  padding: 8px 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
 
-.audit-task-card.dragging {
+.audit-task-pill .badge {
+  font-size: 0.7rem;
+}
+
+.audit-task-pill:hover {
+  border-color: #6366f1;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.12);
+  transform: translateY(-1px);
+}
+
+.audit-task-pill.dragging {
   opacity: 0.6;
 }
 
-.audit-task-card.drag-over {
+.audit-task-pill.drag-over {
   border-color: #60a5fa;
   box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.3);
-}
-
-.audit-task-header {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  align-items: center;
-}
-
-.audit-task-header .task-meta {
-  gap: 2px;
-}
-
-.drag-handle {
-  background: #e2e8f0;
-  border-radius: 8px;
-  padding: 6px 10px;
-  font-size: 0.75rem;
-  color: #475569;
-  cursor: grab;
-}
-
-.audit-task-fields {
-  display: grid;
-  gap: 12px;
-}
-
-.audit-task-fields .field {
-  margin-bottom: 0;
-}
-
-.audit-task-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 12px;
 }
 
 .task-meta {

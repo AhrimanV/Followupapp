@@ -101,8 +101,8 @@ const elements = {
   queueAlertAction: document.getElementById("queue-alert-action"),
   managerAuditHeader: document.getElementById("manager-audit-header"),
   managerTaskList: document.getElementById("manager-task-list"),
-  existingTaskSelect: document.getElementById("existing-task-select"),
-  addExistingTaskButton: document.getElementById("add-existing-task"),
+  existingTaskCategory: document.getElementById("existing-task-category"),
+  existingTaskList: document.getElementById("existing-task-list"),
   auditTaskSummary: document.getElementById("audit-task-summary"),
   auditTaskCount: document.getElementById("audit-task-count"),
   taskTitleInput: document.getElementById("task-title-input"),
@@ -115,6 +115,11 @@ const elements = {
   taskAssignee: document.getElementById("detail-task-assignee"),
   taskAssigneeEmail: document.getElementById("detail-task-email"),
   taskProofRequired: document.getElementById("detail-task-proof"),
+  taskDetailDueInput: document.getElementById("detail-task-due-input"),
+  taskDetailCategoryInput: document.getElementById("detail-task-category-input"),
+  taskDetailAssigneeInput: document.getElementById("detail-task-assignee-input"),
+  taskDetailProofInput: document.getElementById("detail-task-proof-input"),
+  removeTaskButton: document.getElementById("remove-task-from-audit"),
   generateReportButton: document.getElementById("generate-report-button"),
   storeManagerTitle: document.getElementById("store-manager-title"),
   storeManagerSubtitle: document.getElementById("store-manager-subtitle"),
@@ -190,6 +195,8 @@ const elements = {
   auditDraftTimestamp: document.getElementById("audit-draft-timestamp"),
   adminMessageReviewerButton: document.getElementById("admin-message-reviewer-button"),
 };
+
+let selectedTemplateCategory = "";
 
 const storeManagerElements = {
   storeManagerTitle: elements.storeManagerTitle,
@@ -833,6 +840,14 @@ function renderTaskList() {
   renderHomeAudits();
 }
 
+function clampTaskDueDate(value, auditDeadline) {
+  if (!auditDeadline || !value) return value;
+  if (value > auditDeadline) {
+    return auditDeadline;
+  }
+  return value;
+}
+
 function renderTaskDetail() {
   const taskEntry = getTaskEntry(state.selectedTaskId);
   if (!taskEntry) {
@@ -856,6 +871,26 @@ function renderTaskDetail() {
     elements.approveButton.disabled = true;
     elements.submitProof.disabled = true;
     elements.uploadProof.disabled = true;
+    if (elements.taskDetailDueInput) {
+      elements.taskDetailDueInput.value = "";
+      elements.taskDetailDueInput.max = "";
+      elements.taskDetailDueInput.disabled = true;
+    }
+    if (elements.taskDetailCategoryInput) {
+      elements.taskDetailCategoryInput.innerHTML = "";
+      elements.taskDetailCategoryInput.disabled = true;
+    }
+    if (elements.taskDetailAssigneeInput) {
+      elements.taskDetailAssigneeInput.value = "";
+      elements.taskDetailAssigneeInput.disabled = true;
+    }
+    if (elements.taskDetailProofInput) {
+      elements.taskDetailProofInput.checked = false;
+      elements.taskDetailProofInput.disabled = true;
+    }
+    if (elements.removeTaskButton) {
+      elements.removeTaskButton.disabled = true;
+    }
     renderSidebarFooter();
     renderSidebarMetrics();
     return;
@@ -893,6 +928,32 @@ function renderTaskDetail() {
 
   elements.reviewerFeedback.classList.toggle("hidden", task.status !== TaskStatus.REJECTED);
   elements.reviewerFeedback.textContent = task.reviewerNotes || "No reviewer feedback.";
+  if (elements.taskDetailDueInput) {
+    elements.taskDetailDueInput.disabled = false;
+    const deadline = elements.auditDeadlineInput?.value || audit.deadline || "";
+    elements.taskDetailDueInput.max = deadline;
+    elements.taskDetailDueInput.value = task.dueDate || "";
+  }
+  if (elements.taskDetailCategoryInput) {
+    elements.taskDetailCategoryInput.disabled = false;
+    elements.taskDetailCategoryInput.innerHTML = audit.categoryOptions
+      .map(
+        (category) =>
+          `<option value="${category}" ${task.category === category ? "selected" : ""}>${category}</option>`,
+      )
+      .join("");
+  }
+  if (elements.taskDetailAssigneeInput) {
+    elements.taskDetailAssigneeInput.disabled = false;
+    elements.taskDetailAssigneeInput.value = task.assignedTo || "";
+  }
+  if (elements.taskDetailProofInput) {
+    elements.taskDetailProofInput.disabled = false;
+    elements.taskDetailProofInput.checked = task.requiresProof !== false;
+  }
+  if (elements.removeTaskButton) {
+    elements.removeTaskButton.disabled = false;
+  }
   renderSidebarFooter();
   renderSidebarMetrics();
 }
@@ -947,25 +1008,66 @@ function renderReviewerQueue() {
   renderSidebarMetrics();
 }
 
-function renderExistingTaskOptions() {
-  elements.existingTaskSelect.innerHTML = "";
+function renderTaskTemplatePicker() {
+  if (!elements.existingTaskCategory || !elements.existingTaskList) return;
+  elements.existingTaskCategory.innerHTML = "";
+  elements.existingTaskList.innerHTML = "";
   const audit = getSelectedAudit();
   const templates = getUnassignedTemplates(audit);
 
   if (!templates.length) {
     const option = document.createElement("option");
-    option.textContent = "All templates already assigned";
+    option.textContent = "All templates assigned";
     option.value = "";
-    elements.existingTaskSelect.appendChild(option);
+    elements.existingTaskCategory.appendChild(option);
+    elements.existingTaskCategory.disabled = true;
+    const empty = document.createElement("p");
+    empty.className = "muted";
+    empty.textContent = "All templates are already assigned to this audit.";
+    elements.existingTaskList.appendChild(empty);
     return;
   }
 
-  templates.forEach((template) => {
+  elements.existingTaskCategory.disabled = false;
+  const categories = [...new Set(templates.map((template) => template.category))].sort((a, b) =>
+    a.localeCompare(b),
+  );
+  categories.forEach((category) => {
     const option = document.createElement("option");
-    option.value = template.id;
-    option.textContent = `${template.title} · ${template.category}`;
-    elements.existingTaskSelect.appendChild(option);
+    option.value = category;
+    option.textContent = category;
+    elements.existingTaskCategory.appendChild(option);
   });
+
+  if (!categories.includes(selectedTemplateCategory)) {
+    selectedTemplateCategory = categories[0];
+  }
+  elements.existingTaskCategory.value = selectedTemplateCategory;
+
+  templates
+    .filter((template) => template.category === selectedTemplateCategory)
+    .forEach((template) => {
+      const item = document.createElement("button");
+      item.type = "button";
+      item.className = "task-template-item";
+      item.innerHTML = `
+        <div>
+          <strong>${template.title}</strong>
+          <small>${template.category}</small>
+        </div>
+        <span class="pill">Add</span>
+      `;
+      item.addEventListener("click", () => {
+        if (!audit || audit.tasks.some((task) => task.templateId === template.id)) return;
+        assignTemplateToAudit(template.id, audit);
+        renderAuditTaskSummary();
+        renderTaskList();
+        renderReviewerQueue();
+        renderTaskTemplatePicker();
+        renderTaskPool();
+      });
+      elements.existingTaskList.appendChild(item);
+    });
 }
 
 function renderAuditTaskSummary() {
@@ -973,6 +1075,7 @@ function renderAuditTaskSummary() {
   const audit = getSelectedAudit();
   const tasks = getTasksForAudit(audit);
   elements.auditTaskCount.textContent = `${tasks.length} tasks`;
+  renderTaskTemplatePicker();
 
   if (!tasks.length) {
     const empty = document.createElement("p");
@@ -983,56 +1086,14 @@ function renderAuditTaskSummary() {
     return;
   }
 
-  tasks.forEach((task, index) => {
-    const item = document.createElement("div");
-    item.className = "audit-task-card";
+  tasks.forEach((task) => {
+    const item = document.createElement("button");
+    item.type = "button";
+    item.className = "audit-task-pill";
     item.draggable = true;
     item.innerHTML = `
-      <div class="task-card-header">
-        <strong>${task.title}</strong>
-        <span class="${getStatusBadgeClass(task.status)}">${task.status}</span>
-      </div>
-      <div class="task-card-grid">
-        <label class="field">
-          Due date
-          <input type="date" data-task-due="${task.id}" value="${task.dueDate || ""}" />
-        </label>
-        <label class="field">
-          Category
-          <select data-task-category="${task.id}">
-            ${audit.categoryOptions
-              .map(
-                (category) =>
-                  `<option value="${category}" ${
-                    task.category === category ? "selected" : ""
-                  }>${category}</option>`,
-              )
-              .join("")}
-          </select>
-        </label>
-        <label class="field">
-          Assign to
-          <input type="text" list="assignee-list" data-task-assignee="${task.id}" value="${
-            task.assignedTo || ""
-          }" placeholder="Search M365 contact" />
-        </label>
-        <label class="field field-inline">
-          <input type="checkbox" data-task-proof="${task.id}" ${
-            task.requiresProof !== false ? "checked" : ""
-          } />
-          Proof required
-        </label>
-      </div>
-      <label class="field">
-        Manager notes
-        <textarea rows="2" data-task-notes="${task.id}" placeholder="Add instructions for the store manager...">${
-          task.managerNotes || ""
-        }</textarea>
-      </label>
-      <div class="actions">
-        <button class="secondary" data-task-id="${task.id}">Remove from audit</button>
-        <span class="muted">Order ${index + 1}</span>
-      </div>
+      <span>${task.title}</span>
+      <span class="${getStatusBadgeClass(task.status)}">${task.status}</span>
     `;
 
     item.addEventListener("dragstart", () => {
@@ -1043,7 +1104,7 @@ function renderAuditTaskSummary() {
     item.addEventListener("dragend", () => {
       state.dragTaskId = null;
       item.classList.remove("dragging");
-      document.querySelectorAll(".audit-task-card").forEach((card) => card.classList.remove("drag-over"));
+      document.querySelectorAll(".audit-task-pill").forEach((card) => card.classList.remove("drag-over"));
     });
 
     item.addEventListener("dragover", (event) => {
@@ -1064,51 +1125,14 @@ function renderAuditTaskSummary() {
       renderAuditTaskSummary();
       renderTaskList();
       renderReviewerQueue();
+      renderTaskTemplatePicker();
       renderTaskPool();
     });
 
-    item.querySelector("[data-task-due]").addEventListener("change", (event) => {
-      task.dueDate = event.target.value;
-      renderTaskList();
-      renderReviewerQueue();
-    });
-
-    item.querySelector("[data-task-category]").addEventListener("change", (event) => {
-      task.category = event.target.value;
-      renderTaskList();
-      renderReviewerQueue();
-    });
-
-    item.querySelector("[data-task-assignee]").addEventListener("change", (event) => {
-      const value = event.target.value.trim();
-      const match = m365Directory.contacts.find(
-        (contact) => contact.displayName === value || contact.email === value,
-      );
-      task.assignedTo = match?.displayName || value || "Unassigned";
-      task.assignedEmail = match?.email || "";
-      task.assignedUserId = users.find((user) => user.email === match?.email)?.id || null;
-      renderTaskList();
-      renderStoreManager();
-    });
-
-    item.querySelector("[data-task-proof]").addEventListener("change", (event) => {
-      task.requiresProof = event.target.checked;
+    item.addEventListener("click", () => {
+      state.selectedTaskId = task.id;
       renderTaskDetail();
-      renderStoreManager();
-    });
-
-    item.querySelector("[data-task-notes]").addEventListener("input", (event) => {
-      task.managerNotes = event.target.value;
-      renderStoreManager();
-    });
-
-    item.querySelector("button[data-task-id]").addEventListener("click", () => {
-      audit.tasks = audit.tasks.filter((entry) => entry.id !== task.id);
-      renderAuditTaskSummary();
-      renderTaskList();
-      renderReviewerQueue();
-      renderExistingTaskOptions();
-      renderTaskPool();
+      switchScreen("task-detail");
     });
 
     elements.auditTaskSummary.appendChild(item);
@@ -1644,18 +1668,12 @@ if (elements.saveDraftButton) {
   });
 }
 
-elements.addExistingTaskButton.addEventListener("click", () => {
-  const audit = getSelectedAudit();
-  const templateId = elements.existingTaskSelect.value;
-  if (!templateId || !audit) return;
-  if (audit.tasks.some((task) => task.templateId === templateId)) return;
-  assignTemplateToAudit(templateId, audit);
-  renderAuditTaskSummary();
-  renderTaskList();
-  renderReviewerQueue();
-  renderExistingTaskOptions();
-  renderTaskPool();
-});
+if (elements.existingTaskCategory) {
+  elements.existingTaskCategory.addEventListener("change", (event) => {
+    selectedTemplateCategory = event.target.value;
+    renderTaskTemplatePicker();
+  });
+}
 
 elements.addTaskButton.addEventListener("click", () => {
   const title = elements.taskTitleInput.value;
@@ -1670,7 +1688,7 @@ elements.addTaskButton.addEventListener("click", () => {
   if (elements.taskProofRequiredInput) {
     elements.taskProofRequiredInput.checked = true;
   }
-  renderExistingTaskOptions();
+  renderTaskTemplatePicker();
   renderTaskPool();
 });
 
@@ -1690,7 +1708,7 @@ elements.bulkAddButton.addEventListener("click", () => {
       createTemplate({ title, category, notes: "", requiresProof: true });
     }
   });
-  renderExistingTaskOptions();
+  renderTaskTemplatePicker();
   renderTaskPool();
 });
 
@@ -1741,6 +1759,81 @@ elements.managerNotes.addEventListener("input", (event) => {
   taskEntry.task.managerNotes = event.target.value;
   renderStoreManager();
 });
+
+if (elements.taskDetailDueInput) {
+  elements.taskDetailDueInput.addEventListener("change", (event) => {
+    const taskEntry = getTaskEntry(state.selectedTaskId);
+    if (!taskEntry) return;
+    const deadline = elements.auditDeadlineInput?.value || taskEntry.audit.deadline || "";
+    const clamped = clampTaskDueDate(event.target.value, deadline);
+    if (clamped !== event.target.value) {
+      event.target.value = clamped;
+    }
+    taskEntry.task.dueDate = clamped;
+    elements.taskDue.textContent = formatDate(clamped);
+    renderTaskList();
+    renderReviewerQueue();
+    renderHomeOverview();
+    renderHomeAudits();
+  });
+}
+
+if (elements.taskDetailCategoryInput) {
+  elements.taskDetailCategoryInput.addEventListener("change", (event) => {
+    const taskEntry = getTaskEntry(state.selectedTaskId);
+    if (!taskEntry) return;
+    taskEntry.task.category = event.target.value;
+    elements.taskCategory.textContent = event.target.value;
+    renderTaskList();
+    renderReviewerQueue();
+  });
+}
+
+if (elements.taskDetailAssigneeInput) {
+  elements.taskDetailAssigneeInput.addEventListener("change", (event) => {
+    const taskEntry = getTaskEntry(state.selectedTaskId);
+    if (!taskEntry) return;
+    const value = event.target.value.trim();
+    const match = m365Directory.contacts.find(
+      (contact) => contact.displayName === value || contact.email === value,
+    );
+    taskEntry.task.assignedTo = match?.displayName || value || "Unassigned";
+    taskEntry.task.assignedEmail = match?.email || "";
+    taskEntry.task.assignedUserId = users.find((user) => user.email === match?.email)?.id || null;
+    elements.taskAssignee.textContent = taskEntry.task.assignedTo || "Unassigned";
+    elements.taskAssigneeEmail.textContent = taskEntry.task.assignedEmail || "";
+    renderTaskList();
+    renderStoreManager();
+  });
+}
+
+if (elements.taskDetailProofInput) {
+  elements.taskDetailProofInput.addEventListener("change", (event) => {
+    const taskEntry = getTaskEntry(state.selectedTaskId);
+    if (!taskEntry) return;
+    taskEntry.task.requiresProof = event.target.checked;
+    elements.taskProofRequired.textContent = event.target.checked ? "Yes" : "No";
+    renderTaskDetail();
+    renderStoreManager();
+  });
+}
+
+if (elements.removeTaskButton) {
+  elements.removeTaskButton.addEventListener("click", () => {
+    const taskEntry = getTaskEntry(state.selectedTaskId);
+    if (!taskEntry) return;
+    const { audit, task } = taskEntry;
+    audit.tasks = audit.tasks.filter((entry) => entry.id !== task.id);
+    state.selectedTaskId = audit.tasks[0]?.id || null;
+    renderAuditTaskSummary();
+    renderTaskList();
+    renderReviewerQueue();
+    renderTaskTemplatePicker();
+    renderTaskPool();
+    renderTaskDetail();
+    renderStoreManager();
+  });
+}
 
 if (elements.generateReportButton) {
   elements.generateReportButton.addEventListener("click", () => {
@@ -1869,7 +1962,6 @@ function init() {
   renderTaskDetail();
   renderReviewerQueue();
   renderStoreManager();
-  renderExistingTaskOptions();
   renderAuditTaskSummary();
   renderTaskPool();
   renderAdminOverview();
