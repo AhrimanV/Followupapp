@@ -1,13 +1,15 @@
 Followupapp is a lightweight, front-end-only demo for tracking follow-up tasks and reminders. It runs entirely in the browser and uses static demo data to illustrate the UI and interactions.
 
 Open locally
-1. Open `index.html` directly in your browser (double-click it or use File → Open).
+1. Open `admin.html` or `store-manager.html` directly in your browser (double-click it or use File → Open).
 2. No build step or server is required.
 
 Key files
-- `index.html`: Main page markup and app container.
+- `admin.html`: Admin workspace markup and app container.
+- `store-manager.html`: Store manager workspace markup and app container.
 - `styles.css`: Global styles and layout for the UI.
-- `app.js`: Client-side behavior and demo data handling.
+- `admin.js`: Client-side behavior and demo data handling for the admin view.
+- `store-manager.js`: Client-side behavior and demo data handling for the store manager view.
 - `store-manager-test.html`: Store manager workspace with a preloaded admin-linked test profile.
 - `build-package.md`: Packaging/build notes for distributing the static app.
 
