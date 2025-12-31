@@ -40,6 +40,7 @@ import {
   isAdmin,
   logAuditEmailSend,
   renderStoreManagerView,
+  showNotification,
   syncStoreManagerLocaleFromAudit,
 } from "./shared.js";
 
@@ -2336,7 +2337,7 @@ if (elements.deleteAuditTypeButton) {
     const auditType = getSelectedAuditType();
     if (!auditType) return;
     if (store.auditTypes.length <= 1) {
-      window.alert("At least one audit type library is required.");
+      showNotification("At least one audit type library is required.", { tone: "warning" });
       return;
     }
     const confirmDelete = window.confirm(
@@ -2565,7 +2566,7 @@ if (elements.generateReportButton) {
 
 if (elements.adminMessageReviewerButton) {
   elements.adminMessageReviewerButton.addEventListener("click", () => {
-    window.alert("Your message has been queued for the reviewer.");
+    showNotification("Your message has been queued for the reviewer.", { tone: "success" });
   });
 }
 

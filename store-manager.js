@@ -3,6 +3,7 @@ import {
   getAccessibleAudits,
   getStoreManagerStrings,
   renderStoreManagerView,
+  showNotification,
   state,
 } from "./shared.js";
 
@@ -86,7 +87,7 @@ if (elements.storeManagerLocaleSelect) {
 
 if (elements.messageReviewerButton) {
   elements.messageReviewerButton.addEventListener("click", () => {
-    window.alert("Your message has been queued for the reviewer.");
+    showNotification("Your message has been queued for the reviewer.", { tone: "success" });
   });
 }
 
