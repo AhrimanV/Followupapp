@@ -5,6 +5,22 @@ export const TaskStatus = {
   REJECTED: "Rejected",
 };
 
+export function showNotification(message, { tone = "info", duration = 3200 } = {}) {
+  const toast = document.getElementById("toast-banner");
+  if (!toast) return;
+  toast.textContent = message;
+  toast.classList.remove("toast-banner--success", "toast-banner--warning", "toast-banner--info");
+  toast.classList.add(`toast-banner--${tone}`);
+  toast.classList.add("is-visible");
+
+  window.clearTimeout(showNotification.timeoutId);
+  showNotification.timeoutId = window.setTimeout(() => {
+    toast.classList.remove("is-visible");
+  }, duration);
+}
+
+showNotification.timeoutId = null;
+
 export const m365Directory = {
   accessMode: "imported",
   lastSync: "2025-02-19T14:20:00Z",
