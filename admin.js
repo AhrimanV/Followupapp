@@ -56,6 +56,12 @@ const screens = document.querySelectorAll(".content");
 const screenTitle = document.getElementById("screen-title");
 const screenSubtitle = document.getElementById("screen-subtitle");
 
+const isDevEnvironment = () =>
+  location.protocol === "file:" ||
+  location.hostname === "" ||
+  location.hostname === "localhost" ||
+  location.hostname === "127.0.0.1";
+
 const screenMeta = {
   home: {
     title: "Home",
@@ -173,6 +179,8 @@ const elements = {
   payloadCopyButton: document.getElementById("payload-copy-button"),
   payloadDownloadButton: document.getElementById("payload-download-button"),
   payloadOutput: document.getElementById("payload-output"),
+  demoControls: document.getElementById("demo-controls"),
+  resetDemoDataButton: document.getElementById("reset-demo-data-button"),
   homeOpenAudits: document.getElementById("home-open-audits"),
   homeOpenAuditsButton: document.getElementById("home-open-audits-button"),
   homeOverdueAudits: document.getElementById("home-overdue-audits"),
@@ -2136,6 +2144,32 @@ function updateNavigationVisibility() {
   }
 }
 
+function updateDevOnlyVisibility() {
+  const showDevControls = isDevEnvironment();
+  document.querySelectorAll(".dev-only").forEach((node) => {
+    node.classList.toggle("hidden", !showDevControls);
+  });
+}
+
+async function handleResetDemoData() {
+  if (!window.confirm("Reset demo data? This will overwrite local storage.")) return;
+  try {
+    const response = await fetch("./fixtures/demo-store.json", { cache: "no-store" });
+    if (!response.ok) {
+      throw new Error(`Unable to load demo fixture: ${response.status}`);
+    }
+    const seed = await response.json();
+    storage.resetStore(seed);
+    showNotification("Demo data reset. Reloading now...", { tone: "success" });
+    window.setTimeout(() => {
+      window.location.reload();
+    }, 600);
+  } catch (error) {
+    console.error(error);
+    showNotification("Unable to reset demo data.", { tone: "warning" });
+  }
+}
+
 function reorderAuditTasks(audit, draggedId, targetId) {
   if (!audit?.tasks?.length) return;
   const tasks = [...audit.tasks];
@@ -2848,6 +2882,10 @@ if (elements.payloadDownloadButton) {
   });
 }
 
+if (elements.resetDemoDataButton) {
+  elements.resetDemoDataButton.addEventListener("click", handleResetDemoData);
+}
+
 if (elements.storeManagerLocaleSelect) {
   elements.storeManagerLocaleSelect.addEventListener("change", (event) => {
     state.storeManagerLocale = event.target.value;
@@ -2942,6 +2980,7 @@ async function init() {
   await loadDealerContacts();
   renderAssigneeDatalist();
   updateNavigationVisibility();
+  updateDevOnlyVisibility();
   renderRoleLayout();
   renderAuditTypeSelectOptions();
   renderAdminFilters();

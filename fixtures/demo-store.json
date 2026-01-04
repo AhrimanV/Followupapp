@@ -1,0 +1,292 @@
+{
+  "auditTypes": [
+    {
+      "id": "ATY-DEMO-01",
+      "name": {
+        "en": "Operational Safety",
+        "fr": "Sécurité opérationnelle"
+      },
+      "categories": [
+        {
+          "id": "CAT-DEMO-01",
+          "name": {
+            "en": "Safety",
+            "fr": "Sécurité"
+          },
+          "tasks": [
+            {
+              "id": "TPL-DEMO-01",
+              "title": {
+                "en": "Emergency exit signage",
+                "fr": "Signalisation des sorties de secours"
+              },
+              "notes": {
+                "en": "Ensure emergency exits remain clear and clearly marked.",
+                "fr": "Assurez-vous que les sorties de secours sont dégagées et bien identifiées."
+              },
+              "requiresProof": true
+            }
+          ]
+        },
+        {
+          "id": "CAT-DEMO-02",
+          "name": {
+            "en": "Store Appearance",
+            "fr": "Apparence du magasin"
+          },
+          "tasks": [
+            {
+              "id": "TPL-DEMO-02",
+              "title": {
+                "en": "Stock room labeling",
+                "fr": "Étiquetage de la réserve"
+              },
+              "notes": {
+                "en": "Update aisle labels and bin signage.",
+                "fr": "Mettez à jour les étiquettes des allées et des bacs."
+              },
+              "requiresProof": true
+            }
+          ]
+        },
+        {
+          "id": "CAT-DEMO-03",
+          "name": {
+            "en": "Documentation",
+            "fr": "Documentation"
+          },
+          "tasks": [
+            {
+              "id": "TPL-DEMO-03",
+              "title": {
+                "en": "Policy binder update",
+                "fr": "Mise à jour du classeur de politiques"
+              },
+              "notes": {
+                "en": "Confirm the policy binder includes the latest signed forms.",
+                "fr": "Confirmez que le classeur comprend les derniers formulaires signés."
+              },
+              "requiresProof": false
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "audits": [
+    {
+      "id": "AUD-DEMO-001",
+      "followUpIteration": "001",
+      "storeCode": "X",
+      "storeName": "Demo Flagship",
+      "auditType": "ATY-DEMO-01",
+      "createdAt": "2025-03-01",
+      "ownerId": "usr-ros1",
+      "language": "en",
+      "reminderCadenceDays": 7,
+      "escalationRules": {
+        "reminderRecipients": ["store-manager", "regional-manager"],
+        "deadlineRecipients": ["store-manager", "regional-manager", "director"]
+      },
+      "storeManagerName": "Riley Park",
+      "storeManagerEmail": "riley.park@example.com",
+      "regionalManagerName": "Kelly Rodgers",
+      "regionalManagerEmail": "kelly.rodgers@contoso.com",
+      "directorName": "Guillaume Veillette",
+      "directorEmail": "guillaume.veillette@bell.ca",
+      "backupAssigneeEmail": "ros-team@contoso.com",
+      "categoryOptions": ["Safety", "Store Appearance", "Documentation"],
+      "status": "Launched",
+      "tasks": [
+        {
+          "id": "AT-DEMO-1001",
+          "templateId": "TPL-DEMO-01",
+          "title": "Emergency exit signage",
+          "category": "Safety",
+          "dueDate": "2024-12-15",
+          "assignedTo": "Riley Park",
+          "assignedUserId": "usr-sm1",
+          "assignedEmail": "riley.park@example.com",
+          "managerNotes": "Install new decals and clear the exit path.",
+          "requiresProof": true,
+          "status": "Not Started",
+          "submissions": [],
+          "pendingProof": {
+            "notes": "",
+            "photos": []
+          },
+          "reviewerNotes": ""
+        },
+        {
+          "id": "AT-DEMO-1002",
+          "templateId": "TPL-DEMO-02",
+          "title": "Stock room labeling",
+          "category": "Store Appearance",
+          "dueDate": "2025-03-08",
+          "assignedTo": "Riley Park",
+          "assignedUserId": "usr-sm1",
+          "assignedEmail": "riley.park@example.com",
+          "managerNotes": "Replace worn labels and add a new aisle map.",
+          "requiresProof": true,
+          "status": "Proof Submitted",
+          "submissions": [
+            {
+              "id": "SUB-DEMO-01",
+              "submittedAt": "2025-03-04T16:10:00Z",
+              "status": "Proof Submitted",
+              "comment": "Updated labels with new shelf locations.",
+              "proofLinks": ["stockroom-labels-1.jpg", "stockroom-labels-2.jpg"],
+              "reviewerNotes": ""
+            }
+          ],
+          "pendingProof": {
+            "notes": "",
+            "photos": []
+          },
+          "reviewerNotes": ""
+        },
+        {
+          "id": "AT-DEMO-1003",
+          "templateId": "TPL-DEMO-03",
+          "title": "Policy binder update",
+          "category": "Documentation",
+          "dueDate": "2025-02-20",
+          "assignedTo": "Riley Park",
+          "assignedUserId": "usr-sm1",
+          "assignedEmail": "riley.park@example.com",
+          "managerNotes": "Add the latest acknowledgement forms.",
+          "requiresProof": false,
+          "status": "Approved",
+          "submissions": [
+            {
+              "id": "SUB-DEMO-02",
+              "submittedAt": "2025-02-18T09:05:00Z",
+              "status": "Approved",
+              "comment": "Binder updated and signed forms added.",
+              "proofLinks": [],
+              "reviewerNotes": "Looks good."
+            }
+          ],
+          "pendingProof": {
+            "notes": "",
+            "photos": []
+          },
+          "reviewerNotes": "Looks good."
+        },
+        {
+          "id": "AT-DEMO-1004",
+          "templateId": "TPL-DEMO-01",
+          "title": "Fire extinguisher inspection",
+          "category": "Safety",
+          "dueDate": "2024-11-30",
+          "assignedTo": "Riley Park",
+          "assignedUserId": "usr-sm1",
+          "assignedEmail": "riley.park@example.com",
+          "managerNotes": "Document inspection tags for all units.",
+          "requiresProof": true,
+          "status": "Overdue",
+          "submissions": [],
+          "pendingProof": {
+            "notes": "",
+            "photos": []
+          },
+          "reviewerNotes": ""
+        },
+        {
+          "id": "AT-DEMO-1005",
+          "templateId": "TPL-DEMO-02",
+          "title": "Backroom spill kit restock",
+          "category": "Safety",
+          "dueDate": "2025-03-02",
+          "assignedTo": "Riley Park",
+          "assignedUserId": "usr-sm1",
+          "assignedEmail": "riley.park@example.com",
+          "managerNotes": "Replace any missing absorbent pads.",
+          "requiresProof": true,
+          "status": "Rejected",
+          "submissions": [
+            {
+              "id": "SUB-DEMO-03",
+              "submittedAt": "2025-03-01T13:45:00Z",
+              "status": "Rejected",
+              "comment": "Restocked pads, but missing signage.",
+              "proofLinks": ["spill-kit-1.jpg"],
+              "reviewerNotes": "Please add the missing safety placard."
+            }
+          ],
+          "pendingProof": {
+            "notes": "",
+            "photos": []
+          },
+          "reviewerNotes": "Please add the missing safety placard."
+        }
+      ]
+    },
+    {
+      "id": "AUD-DEMO-002",
+      "followUpIteration": "002",
+      "storeCode": "ON-204",
+      "storeName": "Toronto Midtown",
+      "auditType": "ATY-DEMO-01",
+      "createdAt": "2025-03-05",
+      "ownerId": "usr-ros2",
+      "language": "en",
+      "reminderCadenceDays": 5,
+      "escalationRules": {
+        "reminderRecipients": ["store-manager", "regional-manager"],
+        "deadlineRecipients": ["store-manager", "regional-manager", "director"]
+      },
+      "storeManagerName": "Sam Thompson",
+      "storeManagerEmail": "sam.thompson@contoso.com",
+      "regionalManagerName": "Kelly Rodgers",
+      "regionalManagerEmail": "kelly.rodgers@contoso.com",
+      "directorName": "Guillaume Veillette",
+      "directorEmail": "guillaume.veillette@bell.ca",
+      "backupAssigneeEmail": "ros-team@contoso.com",
+      "categoryOptions": ["Safety", "Store Appearance", "Documentation"],
+      "status": "Draft",
+      "tasks": [
+        {
+          "id": "AT-DEMO-2001",
+          "templateId": "TPL-DEMO-01",
+          "title": "Emergency exit signage",
+          "category": "Safety",
+          "dueDate": "2025-04-01",
+          "assignedTo": "Sam Thompson",
+          "assignedUserId": "usr-sm1",
+          "assignedEmail": "sam.thompson@contoso.com",
+          "managerNotes": "Confirm signage meets the updated guidance.",
+          "requiresProof": true,
+          "status": "Not Started",
+          "submissions": [],
+          "pendingProof": {
+            "notes": "",
+            "photos": []
+          },
+          "reviewerNotes": ""
+        },
+        {
+          "id": "AT-DEMO-2002",
+          "templateId": "TPL-DEMO-03",
+          "title": "Policy binder update",
+          "category": "Documentation",
+          "dueDate": "2025-04-05",
+          "assignedTo": "Sam Thompson",
+          "assignedUserId": "usr-sm1",
+          "assignedEmail": "sam.thompson@contoso.com",
+          "managerNotes": "Draft only, no submissions yet.",
+          "requiresProof": false,
+          "status": "Proof Requested",
+          "submissions": [],
+          "pendingProof": {
+            "notes": "",
+            "photos": []
+          },
+          "reviewerNotes": ""
+        }
+      ]
+    }
+  ],
+  "auditEmailSends": [],
+  "auditNotifications": []
+}

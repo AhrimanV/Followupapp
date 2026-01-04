@@ -18,5 +18,15 @@
     "regionalManagerEmail": "taylor.rivers@contoso.com",
     "director": "Guillaume Veillette",
     "directorEmail": "guillaume.veillette@bell.ca"
+  },
+  {
+    "storeCode": "X",
+    "storeName": "Demo Flagship",
+    "storeManager": "Riley Park",
+    "storeManagerEmail": "riley.park@example.com",
+    "regionalManager": "Kelly Rodgers",
+    "regionalManagerEmail": "kelly.rodgers@contoso.com",
+    "director": "Guillaume Veillette",
+    "directorEmail": "guillaume.veillette@bell.ca"
   }
 ]
