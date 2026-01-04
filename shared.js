@@ -846,6 +846,13 @@ export function getTasksForAudit(audit) {
   return [...tasks];
 }
 
+export function getRemainingTasksForAudit(audit) {
+  if (!audit) return [];
+  const storedAudit = audit.id ? storage.getAudit(audit.id) : null;
+  const tasks = storedAudit?.tasks || audit.tasks || [];
+  return tasks.filter((task) => task.status !== TaskStatus.Approved);
+}
+
 export function getVisibleTasksForAudit(audit) {
   const user = getActiveUser();
   if (!user || !audit) return [];
@@ -1014,7 +1021,8 @@ export function generateAuditEmailTemplate({ audit, assignee, language, deadline
   const locale = language || getAuditLanguage(audit);
   const assigneeName = assignee?.name || assignee?.displayName || assignee?.email || "";
   const owner = getUserById(audit?.ownerId);
-  const tasksCount = audit?.tasks?.length ?? 0;
+  const remainingTasks = getRemainingTasksForAudit(audit);
+  const tasksCount = remainingTasks.length;
   const summary = audit?.summary || "";
   const formattedDeadline = formatAuditEmailDeadline(deadline, locale);
   const template = getEmailTemplate(locale);
