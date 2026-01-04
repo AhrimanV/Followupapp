@@ -1,9 +1,4 @@
-export const TaskStatus = {
-  NOT_STARTED: "Not Started",
-  PROOF_SUBMITTED: "Proof Submitted",
-  APPROVED: "Approved",
-  REJECTED: "Rejected",
-};
+import { TaskStatus } from "./models/domainModel.js";
 
 export function showNotification(message, { tone = "info", duration = 3200 } = {}) {
   const toast = document.getElementById("toast-banner");
@@ -374,7 +369,7 @@ export const store = {
           assignedEmail: "sam.thompson@contoso.com",
           managerNotes: "Keep exit door area fully clear and mark floor decals.",
           requiresProof: true,
-          status: TaskStatus.NOT_STARTED,
+          status: TaskStatus.NotStarted,
           submissions: [],
           pendingProof: {
             notes: "",
@@ -393,7 +388,7 @@ export const store = {
           assignedEmail: "sam.thompson@contoso.com",
           managerNotes: "Include new SKU labels for seasonal racks.",
           requiresProof: true,
-          status: TaskStatus.NOT_STARTED,
+          status: TaskStatus.NotStarted,
           submissions: [],
           pendingProof: {
             notes: "",
@@ -412,12 +407,12 @@ export const store = {
           assignedEmail: "sam.thompson@contoso.com",
           managerNotes: "Document inspection stickers for all units.",
           requiresProof: true,
-          status: TaskStatus.PROOF_SUBMITTED,
+          status: TaskStatus.ProofSubmitted,
           submissions: [
             {
               id: "SUB-2",
               submittedAt: "2025-02-15T11:32:00Z",
-              status: TaskStatus.PROOF_SUBMITTED,
+              status: TaskStatus.ProofSubmitted,
               notes: "Updated tags for back room units.",
               photos: [
                 "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=400&q=80",
@@ -469,12 +464,12 @@ export const store = {
           assignedEmail: "morgan.lee@contoso.com",
           managerNotes: "Confirmez les luminaires près de la zone de chargement.",
           requiresProof: true,
-          status: TaskStatus.PROOF_SUBMITTED,
+          status: TaskStatus.ProofSubmitted,
           submissions: [
             {
               id: "SUB-1",
               submittedAt: "2025-02-18T15:10:00Z",
-              status: TaskStatus.PROOF_SUBMITTED,
+              status: TaskStatus.ProofSubmitted,
               notes: "Nouveaux luminaires installés près de la zone de chargement.",
               photos: [
                 "https://images.unsplash.com/photo-1489515217757-5fd1be406fef?auto=format&fit=crop&w=400&q=80",
@@ -500,12 +495,12 @@ export const store = {
           assignedEmail: "morgan.lee@contoso.com",
           managerNotes: "Mettez à jour les affiches dans la salle de pause et la réserve.",
           requiresProof: true,
-          status: TaskStatus.APPROVED,
+          status: TaskStatus.Approved,
           submissions: [
             {
               id: "SUB-1",
               submittedAt: "2025-02-16T09:18:00Z",
-              status: TaskStatus.APPROVED,
+              status: TaskStatus.Approved,
               notes: "Affiches mises à jour dans la salle de pause et le back office.",
               photos: [
                 "https://images.unsplash.com/photo-1494526585095-c41746248156?auto=format&fit=crop&w=400&q=80",
@@ -688,13 +683,13 @@ export const api = {
     const submission = {
       id: nextId,
       submittedAt: new Date().toISOString(),
-      status: TaskStatus.PROOF_SUBMITTED,
+      status: TaskStatus.ProofSubmitted,
       notes: proof.notes,
       photos: proof.photos,
       reviewerNotes: "",
     };
     task.submissions.push(submission);
-    task.status = TaskStatus.PROOF_SUBMITTED;
+    task.status = TaskStatus.ProofSubmitted;
     task.reviewerNotes = "";
     task.pendingProof = { notes: "", photos: [] };
     return submission;
@@ -851,7 +846,7 @@ export function getLatestPendingSubmission(audits) {
     task.submissions.map((submission) => ({ audit, task, submission })),
   );
   return submissions
-    .filter((entry) => entry.submission.status === TaskStatus.PROOF_SUBMITTED)
+    .filter((entry) => entry.submission.status === TaskStatus.ProofSubmitted)
     .sort((a, b) => new Date(b.submission.submittedAt) - new Date(a.submission.submittedAt))[0];
 }
 
@@ -1062,10 +1057,16 @@ export function logAuditEmailSend(payload) {
 }
 
 export function getStatusBadgeClass(status) {
-  if (status === TaskStatus.PROOF_SUBMITTED || status === TaskStatus.APPROVED) {
+  if (status === TaskStatus.ProofSubmitted || status === TaskStatus.Approved) {
     return "badge success";
   }
-  if (status === TaskStatus.REJECTED) {
+  if (status === TaskStatus.ProofRequested) {
+    return "badge warning";
+  }
+  if (status === TaskStatus.Overdue) {
+    return "badge danger";
+  }
+  if (status === TaskStatus.Rejected) {
     return "badge danger";
   }
   return "badge";
@@ -1073,7 +1074,8 @@ export function getStatusBadgeClass(status) {
 
 export function isTaskOverdue(task) {
   if (!task?.dueDate) return false;
-  if (task.status === TaskStatus.APPROVED) return false;
+  if (task.status === TaskStatus.Approved) return false;
+  if (task.status === TaskStatus.Overdue) return true;
   const due = new Date(task.dueDate);
   const today = new Date();
   due.setHours(0, 0, 0, 0);
@@ -1100,7 +1102,7 @@ export function formatDateRange(dates, localeOrLabels) {
 
 export function getAuditCompletionStatus(audit) {
   if (!audit || !audit.tasks.length) return "Open";
-  const completed = audit.tasks.every((task) => task.status === TaskStatus.APPROVED);
+  const completed = audit.tasks.every((task) => task.status === TaskStatus.Approved);
   return completed ? "Complete" : "Open";
 }
 
@@ -1109,7 +1111,7 @@ export function getSidebarMetrics() {
     .length;
   const tasksAwaitingApproval = store.audits
     .flatMap((audit) => audit.tasks)
-    .filter((task) => task.status === TaskStatus.PROOF_SUBMITTED).length;
+    .filter((task) => task.status === TaskStatus.ProofSubmitted).length;
   return {
     openAudits,
     tasksAwaitingApproval,
@@ -1223,14 +1225,14 @@ export function renderStoreManagerView(elements, { onTaskUpdated } = {}) {
     const overdue = isTaskOverdue(task);
     const requiresProof = task.requiresProof !== false;
     const actionLabel =
-      task.status === TaskStatus.APPROVED
+      task.status === TaskStatus.Approved
         ? strings.actionCompleted
-        : task.status === TaskStatus.PROOF_SUBMITTED
+        : task.status === TaskStatus.ProofSubmitted
           ? strings.actionSubmitted
-          : task.status === TaskStatus.REJECTED
+          : task.status === TaskStatus.Rejected
             ? strings.actionResubmit
             : strings.actionSubmit;
-    const disableAction = task.status === TaskStatus.APPROVED || task.status === TaskStatus.PROOF_SUBMITTED;
+    const disableAction = task.status === TaskStatus.Approved || task.status === TaskStatus.ProofSubmitted;
     taskCard.innerHTML = `
       <div class="manager-task-header">
         <div>
@@ -1249,7 +1251,7 @@ export function renderStoreManagerView(elements, { onTaskUpdated } = {}) {
           : ""
       }
       ${
-        task.status === TaskStatus.REJECTED && task.reviewerNotes
+        task.status === TaskStatus.Rejected && task.reviewerNotes
           ? `<div class="manager-task-callout">${strings.reviewerNotesLabel} ${task.reviewerNotes}</div>`
           : ""
       }
