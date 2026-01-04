@@ -1,5 +1,4 @@
 import {
-  TaskStatus,
   m365Directory,
   users,
   store,
@@ -43,6 +42,7 @@ import {
   showNotification,
   syncStoreManagerLocaleFromAudit,
 } from "./shared.js";
+import { TaskStatus } from "./models/domainModel.js";
 
 const navButtons = Array.from(document.querySelectorAll(".nav-item"));
 const screens = document.querySelectorAll(".content");
@@ -1050,7 +1050,7 @@ function renderReviewerQueue() {
   accessibleAudits.forEach((audit) => {
     const tasks = getVisibleTasksForAudit(audit);
     tasks.forEach((task) => {
-      if (task.status !== TaskStatus.PROOF_SUBMITTED) return;
+      if (task.status !== TaskStatus.ProofSubmitted) return;
       const card = document.createElement("div");
       card.className = "queue-card";
       card.innerHTML = `
@@ -1608,7 +1608,7 @@ function renderHomeOverview() {
   const overdueAudits = accessibleAudits.filter((audit) => isAuditOverdue(audit)).length;
   const awaitingApproval = accessibleAudits
     .flatMap((audit) => audit.tasks)
-    .filter((task) => task.status === TaskStatus.PROOF_SUBMITTED).length;
+    .filter((task) => task.status === TaskStatus.ProofSubmitted).length;
 
   elements.homeOpenAudits.textContent = openAudits;
   elements.homeOverdueAudits.textContent = overdueAudits;
@@ -2086,7 +2086,7 @@ function assignTemplateToAudit(templateId, audit) {
     assignedEmail: "",
     managerNotes: templateNotes || "",
     requiresProof: entry.template.requiresProof ?? true,
-    status: TaskStatus.NOT_STARTED,
+    status: TaskStatus.NotStarted,
     submissions: [],
     pendingProof: {
       notes: "",
@@ -2479,7 +2479,7 @@ elements.approveButton.addEventListener("click", async () => {
   const reviewerNotes = elements.reviewerNotes.value.trim();
   await api.reviewSubmission({
     taskId: state.selectedTaskId,
-    decision: TaskStatus.APPROVED,
+    decision: TaskStatus.Approved,
     reviewerNotes,
   });
   renderTaskList();
@@ -2491,7 +2491,7 @@ elements.rejectButton.addEventListener("click", async () => {
   const reviewerNotes = elements.reviewerNotes.value.trim();
   await api.reviewSubmission({
     taskId: state.selectedTaskId,
-    decision: TaskStatus.REJECTED,
+    decision: TaskStatus.Rejected,
     reviewerNotes,
   });
   renderTaskList();
