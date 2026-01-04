@@ -38,12 +38,13 @@ import {
   getVisibleTasksForAudit,
   getLocalizedValue,
   isAdmin,
+  loadDealerContacts,
   logAuditEmailSend,
   renderStoreManagerView,
   showNotification,
   syncStoreManagerLocaleFromAudit,
 } from "./shared.js";
-import { TaskStatus } from "./models/domainModel.js";
+import { AuditStatus, TaskStatus } from "./models/domainModel.js";
 
 const navButtons = Array.from(document.querySelectorAll(".nav-item"));
 const screens = document.querySelectorAll(".content");
@@ -687,6 +688,7 @@ function resetCreateAuditForm() {
   if (elements.auditDraftAlert) {
     elements.auditDraftAlert.classList.add("hidden");
   }
+  setAuditFormLock({ status: AuditStatus.Draft });
 }
 
 const defaultEscalationRules = {
@@ -870,6 +872,17 @@ function populateCreateAuditForm(audit) {
     elements.auditSummaryInput.value = audit.summary || elements.auditSummaryInput.value;
   }
   applyEscalationRulesToForm(audit.escalationRules);
+  setAuditFormLock(audit);
+}
+
+function setAuditFormLock(audit) {
+  const isLocked = audit?.status === AuditStatus.Launched;
+  if (elements.auditTypeSelect) {
+    elements.auditTypeSelect.disabled = isLocked;
+  }
+  if (elements.auditStoreCodeInput) {
+    elements.auditStoreCodeInput.disabled = isLocked;
+  }
 }
 
 function renderTaskList() {
@@ -2059,6 +2072,22 @@ function hasMatchingTemplate(category, template) {
   });
 }
 
+function getNextTaskSortOrder(audit) {
+  if (!audit?.tasks?.length) return 1;
+  const maxOrder = Math.max(
+    ...audit.tasks.map((task, index) => task.SortOrder ?? task.sortOrder ?? index + 1),
+  );
+  return maxOrder + 1;
+}
+
+function getTaskSortOrder(taskEntry) {
+  if (!taskEntry) return null;
+  const current = taskEntry.task.SortOrder ?? taskEntry.task.sortOrder;
+  if (current) return current;
+  const index = taskEntry.audit.tasks.findIndex((task) => task.id === taskEntry.task.id);
+  return index >= 0 ? index + 1 : null;
+}
+
 function assignTemplateToAudit(templateId, audit) {
   if (!audit) return;
   const entry = getAuditTypeTemplateEntry(audit.auditType, templateId);
@@ -2068,12 +2097,15 @@ function assignTemplateToAudit(templateId, audit) {
   const templateNotes = getLocalizedValue(entry.template.notes, locale);
   const categoryLabel = getLocalizedValue(entry.category.name, locale);
   const deadline = audit.deadline || elements.auditDeadlineInput?.value || "";
+  const sortOrder = getNextTaskSortOrder(audit);
   const newTask = {
     id: generateAuditTaskId(),
     templateId: entry.template.id,
     title: templateTitle,
     category: categoryLabel,
     dueDate: deadline,
+    sortOrder,
+    SortOrder: sortOrder,
     assignedTo: "",
     assignedUserId: null,
     assignedEmail: "",
@@ -2256,8 +2288,9 @@ document.addEventListener("keydown", (event) => {
 
 if (elements.saveDraftButton) {
   elements.saveDraftButton.addEventListener("click", () => {
-    const audit = getSelectedAudit();
-    if (!audit) return;
+    const auditId = elements.auditIdInput?.value.trim();
+    const selectedAudit = getSelectedAudit();
+    const audit = selectedAudit?.id === auditId ? selectedAudit : null;
     const language = elements.auditLanguageSelect?.value || getAuditLanguage(audit);
     const deadline = elements.auditDeadlineInput?.value || "";
     const reminderCadenceDays = getReminderCadenceFromInput(audit);
@@ -2269,8 +2302,18 @@ if (elements.saveDraftButton) {
       summary: elements.auditSummaryInput?.value.trim() || "",
     };
     const assignee = getAssigneeFromInput();
-    const appLink = buildDefaultAuditLink(draftAudit.id || audit.id);
-    storage.updateAudit(audit.id, draftAudit);
+    const existingAudit = draftAudit.id ? storage.getAudit(draftAudit.id) : null;
+    const updatedAudit = existingAudit
+      ? storage.updateAudit(existingAudit.id, draftAudit)
+      : storage.createAudit({
+          ...draftAudit,
+          status: AuditStatus.Draft,
+          tasks: draftAudit.tasks || [],
+        });
+    if (updatedAudit) {
+      state.selectedAuditId = updatedAudit.id;
+    }
+    const appLink = buildDefaultAuditLink(updatedAudit?.id || draftAudit.id || audit?.id);
     renderAuditEmailPreview({ audit: draftAudit, assignee, language, deadline, appLink });
     showDraftAlert("Draft saved locally.");
   });
@@ -2480,6 +2523,13 @@ elements.addTaskButton.addEventListener("click", () => {
 if (elements.saveContinueButton) {
   elements.saveContinueButton.addEventListener("click", () => {
     handleAuditEmailSend();
+    const audit = getSelectedAudit();
+    if (audit) {
+      const updatedAudit = storage.updateAudit(audit.id, { status: AuditStatus.Launched });
+      if (updatedAudit) {
+        setAuditFormLock(updatedAudit);
+      }
+    }
     switchScreen("audit-list");
   });
 }
@@ -2519,7 +2569,12 @@ if (elements.taskDetailDueInput) {
     if (clamped !== event.target.value) {
       event.target.value = clamped;
     }
-    storage.updateTask(taskEntry.audit.id, taskEntry.task.id, { dueDate: clamped });
+    const sortOrder = getTaskSortOrder(taskEntry);
+    storage.updateTask(taskEntry.audit.id, taskEntry.task.id, {
+      dueDate: clamped,
+      sortOrder,
+      SortOrder: sortOrder,
+    });
     elements.taskDue.textContent = formatDate(clamped);
     renderTaskList();
     renderReviewerQueue();
@@ -2532,7 +2587,12 @@ if (elements.taskDetailCategoryInput) {
   elements.taskDetailCategoryInput.addEventListener("change", (event) => {
     const taskEntry = getTaskEntry(state.selectedTaskId);
     if (!taskEntry) return;
-    storage.updateTask(taskEntry.audit.id, taskEntry.task.id, { category: event.target.value });
+    const sortOrder = getTaskSortOrder(taskEntry);
+    storage.updateTask(taskEntry.audit.id, taskEntry.task.id, {
+      category: event.target.value,
+      sortOrder,
+      SortOrder: sortOrder,
+    });
     elements.taskCategory.textContent = event.target.value;
     renderTaskList();
     renderReviewerQueue();
@@ -2547,10 +2607,13 @@ if (elements.taskDetailAssigneeInput) {
     const match = m365Directory.contacts.find(
       (contact) => contact.displayName === value || contact.email === value,
     );
+    const sortOrder = getTaskSortOrder(taskEntry);
     const updates = {
       assignedTo: match?.displayName || value || "Unassigned",
       assignedEmail: match?.email || "",
       assignedUserId: users.find((user) => user.email === match?.email)?.id || null,
+      sortOrder,
+      SortOrder: sortOrder,
     };
     const updatedTask = storage.updateTask(taskEntry.audit.id, taskEntry.task.id, updates);
     elements.taskAssignee.textContent = updatedTask?.assignedTo || "Unassigned";
@@ -2564,7 +2627,12 @@ if (elements.taskDetailProofInput) {
   elements.taskDetailProofInput.addEventListener("change", (event) => {
     const taskEntry = getTaskEntry(state.selectedTaskId);
     if (!taskEntry) return;
-    storage.updateTask(taskEntry.audit.id, taskEntry.task.id, { requiresProof: event.target.checked });
+    const sortOrder = getTaskSortOrder(taskEntry);
+    storage.updateTask(taskEntry.audit.id, taskEntry.task.id, {
+      requiresProof: event.target.checked,
+      sortOrder,
+      SortOrder: sortOrder,
+    });
     elements.taskProofRequired.textContent = event.target.checked ? "Yes" : "No";
     renderTaskDetail();
     renderStoreManager();
@@ -2680,7 +2748,8 @@ function syncSelectedTask() {
   }
 }
 
-function init() {
+async function init() {
+  await loadDealerContacts();
   renderAssigneeDatalist();
   updateNavigationVisibility();
   renderRoleLayout();

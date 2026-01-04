@@ -1,0 +1,22 @@
+[
+  {
+    "storeCode": "ON-204",
+    "storeName": "Toronto Midtown",
+    "storeManager": "Sam Thompson",
+    "storeManagerEmail": "sam.thompson@contoso.com",
+    "regionalManager": "Kelly Rodgers",
+    "regionalManagerEmail": "kelly.rodgers@contoso.com",
+    "director": "Guillaume Veillette",
+    "directorEmail": "guillaume.veillette@bell.ca"
+  },
+  {
+    "storeCode": "QC-118",
+    "storeName": "Montreal East",
+    "storeManager": "Morgan Lee",
+    "storeManagerEmail": "morgan.lee@contoso.com",
+    "regionalManager": "Taylor Rivers",
+    "regionalManagerEmail": "taylor.rivers@contoso.com",
+    "director": "Guillaume Veillette",
+    "directorEmail": "guillaume.veillette@bell.ca"
+  }
+]
