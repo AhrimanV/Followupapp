@@ -2,6 +2,7 @@ import {
   ensureSelectedAudit,
   getAccessibleAudits,
   getStoreManagerStrings,
+  loadDealerContacts,
   renderStoreManagerView,
   showNotification,
   state,
@@ -91,7 +92,8 @@ if (elements.messageReviewerButton) {
   });
 }
 
-function init() {
+async function init() {
+  await loadDealerContacts();
   const testProfile = window.STORE_MANAGER_TEST_PROFILE;
   if (testProfile) {
     applyStoreManagerProfile(testProfile);

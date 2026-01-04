@@ -74,7 +74,7 @@ export const m365Directory = {
   ],
 };
 
-export const storeContacts = [
+const defaultStoreContacts = [
   {
     storeCode: "ON-204",
     storeName: "Toronto Midtown",
@@ -96,6 +96,8 @@ export const storeContacts = [
     directorEmail: "guillaume.veillette@bell.ca",
   },
 ];
+
+export let storeContacts = [...defaultStoreContacts];
 
 export const users = [
   {
@@ -736,6 +738,23 @@ export function getStoreContactByCode(storeCode) {
   return storeContacts.find((contact) => contact.storeCode.toLowerCase() === normalized) || null;
 }
 
+export async function loadDealerContacts() {
+  try {
+    const response = await fetch("./fixtures/dealer-contacts.json", { cache: "no-store" });
+    if (!response.ok) {
+      console.warn("Dealer contact fixture not found, using defaults.");
+      return storeContacts;
+    }
+    const data = await response.json();
+    if (Array.isArray(data) && data.length) {
+      storeContacts = data;
+    }
+  } catch (error) {
+    console.warn("Unable to load dealer contacts fixture.", error);
+  }
+  return storeContacts;
+}
+
 export function getActiveUser() {
   return getUserById(state.activeUserId);
 }
@@ -818,9 +837,14 @@ export function getAccessibleAudits() {
   if (user.role === "auditor") {
     return store.audits.filter((audit) => audit.ownerId === user.id);
   }
-  return store.audits.filter((audit) =>
-    audit.tasks.some((task) => task.assignedTo === user.name || task.assignedEmail === user.email),
+  const managedStores = storeContacts.filter(
+    (contact) =>
+      contact.storeManagerEmail?.toLowerCase() === user.email?.toLowerCase() ||
+      contact.storeManager?.toLowerCase() === user.name?.toLowerCase(),
   );
+  if (!managedStores.length) return [];
+  const managedCodes = new Set(managedStores.map((contact) => contact.storeCode));
+  return store.audits.filter((audit) => managedCodes.has(audit.storeCode));
 }
 
 export function getTasksForAudit(audit) {
