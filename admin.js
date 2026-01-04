@@ -1009,7 +1009,7 @@ function renderTaskDetail() {
   const requiresProof = task.requiresProof !== false;
   elements.taskProofRequired.textContent = requiresProof ? "Yes" : "No";
   elements.taskStatus.textContent = task.status;
-  elements.taskSubmission.textContent = task.submissions.length;
+  elements.taskSubmission.textContent = storage.listSubmissions(audit.id, task.id).length;
   elements.taskAssignee.textContent = task.assignedTo || "Unassigned";
   elements.taskAssigneeEmail.textContent = task.assignedEmail || "";
   elements.reviewerNotes.value = task.reviewerNotes || "";
@@ -1069,7 +1069,7 @@ function renderReviewerQueue() {
         <div>
           <h4>${task.title}</h4>
           <p>${audit.storeName} · ${audit.storeCode}</p>
-          <p class="muted">${task.submissions.length} submissions</p>
+          <p class="muted">${storage.listSubmissions(audit.id, task.id).length} submissions</p>
         </div>
         <button class="secondary">Review</button>
       `;

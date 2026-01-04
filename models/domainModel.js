@@ -44,8 +44,8 @@ export const SubmissionSchema = {
       enum: [TaskStatus.ProofSubmitted, TaskStatus.Approved, TaskStatus.Rejected],
     },
     submittedAt: { type: "string", format: "date-time" },
-    notes: { type: "string" },
-    files: { type: "array", items: { type: "string" } },
+    comment: { type: "string" },
+    proofLinks: { type: "array", items: { type: "string" } },
   },
 };
 
