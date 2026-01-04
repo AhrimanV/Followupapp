@@ -1989,12 +1989,19 @@ function updateNavigationVisibility() {
 }
 
 function reorderAuditTasks(audit, draggedId, targetId) {
+  if (!audit?.tasks?.length) return;
   const tasks = [...audit.tasks];
   const draggedIndex = tasks.findIndex((task) => task.id === draggedId);
   const targetIndex = tasks.findIndex((task) => task.id === targetId);
   if (draggedIndex < 0 || targetIndex < 0) return;
   const [draggedTask] = tasks.splice(draggedIndex, 1);
   tasks.splice(targetIndex, 0, draggedTask);
+  tasks.forEach((task, index) => {
+    if (!task) return;
+    const order = index + 1;
+    task.sortOrder = order;
+    task.SortOrder = order;
+  });
   audit.tasks = tasks;
 }
 
