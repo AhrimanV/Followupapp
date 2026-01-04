@@ -763,12 +763,13 @@ export function detectAuditLanguage(audit) {
     "révision",
     "tâche",
   ];
-  const combinedText = [
-    audit.storeName,
-    audit.storeCode,
-    ...(audit.tasks || []).flatMap((task) => [task.title, task.managerNotes, task.reviewerNotes]),
-  ]
-    .filter(Boolean)
+  const taskFields = (audit.tasks || []).flatMap((task) => {
+    const safeTask = task || {};
+    return [safeTask.title, safeTask.managerNotes, safeTask.reviewerNotes];
+  });
+  const combinedText = [audit.storeName, audit.storeCode, ...taskFields]
+    .map((value) => (value === null || value === undefined ? "" : String(value)))
+    .filter((value) => value.trim())
     .join(" ")
     .toLowerCase();
   return frenchSignals.some((signal) => combinedText.includes(signal)) ? "fr" : "en";
@@ -825,9 +826,11 @@ export function getAccessibleAudits() {
 
 export function getTasksForAudit(audit) {
   if (!audit) return [];
+  const tasks = audit.tasks || [];
+  if (isAdmin()) return [...tasks];
   const accessibleAudits = getAccessibleAudits();
   if (!accessibleAudits.some((entry) => entry.id === audit.id)) return [];
-  return [...audit.tasks];
+  return [...tasks];
 }
 
 export function getVisibleTasksForAudit(audit) {
@@ -1046,10 +1049,13 @@ export function generateAuditEmailTemplate({ audit, assignee, language, deadline
 }
 
 export function logAuditEmailSend(payload) {
+  const safePayload = payload && typeof payload === "object" ? payload : {};
   const sendEvent = {
     id: `EMAIL-${store.auditEmailSends.length + 1}`,
+    ...safePayload,
+    auditId: safePayload.auditId || "",
     sentAt: new Date().toISOString(),
-    ...payload,
+    subject: safePayload.subject || "",
   };
   store.auditEmailSends.unshift(sendEvent);
   return sendEvent;
