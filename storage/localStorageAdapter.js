@@ -57,6 +57,17 @@ export function createLocalStorageAdapter({ namespace = "followupapp", seed = {}
     getStore() {
       return data;
     },
+    resetStore(seed = {}) {
+      data.audits = clone(seed.audits || []);
+      data.auditTypes = clone(seed.auditTypes || []);
+      data.auditEmailSends = clone(seed.auditEmailSends || []);
+      data.auditNotifications = clone(seed.auditNotifications || []);
+      persistAudits();
+      persistAuditTypes();
+      persistEmailSends();
+      persistNotifications();
+      return data;
+    },
     listAudits() {
       return data.audits;
     },

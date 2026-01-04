@@ -13,6 +13,7 @@
  * @property {(auditId: string, taskId: string, decision: Object) => Object | null} createDecision
  * @property {(auditId: string, entry: Object) => Object | null} appendNotificationLog
  * @property {() => Object} getStore
+ * @property {(seed?: Object) => Object} resetStore
  * @property {() => Array} listAuditTypes
  * @property {(auditTypeId: string) => Object | null} getAuditType
  * @property {(auditType: Object) => Object} createAuditType

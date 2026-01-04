@@ -23,6 +23,20 @@ From the repo root:
 node tests/validate-fixtures.mjs
 ```
 
+## Demo reset & lifecycle walkthrough
+
+1. Open `admin.html` in a local browser session (the **Reset demo data** control appears on
+   `file://` or `localhost`).
+2. Navigate to **Admin Panel → Demo Controls** and click **Reset demo data**. The page reloads
+   with demo audits seeded from `fixtures/demo-store.json`.
+3. Visit **Audit List** and confirm one audit is **Launched** and one is **Draft**.
+4. Open the launched audit in **Task List** and confirm tasks span statuses (Not Started,
+   Proof Submitted, Approved, Rejected) with at least one overdue task.
+5. Go to **Create Audit**, update any detail, and click **Save & Launch** to move a draft into
+   the launched workflow.
+6. Switch to **Store Manager** view and submit proof for a task; verify it appears in the
+   **Reviewer Queue** for approval.
+
 The script validates that:
 
 - Each audit includes required fields and at least one task.
