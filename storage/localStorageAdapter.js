@@ -1,3 +1,4 @@
+import { TaskStatus } from "../models/domainModel.js";
 import { createId } from "../utils/id.js";
 
 function clone(value) {
@@ -95,6 +96,7 @@ export function createLocalStorageAdapter({ namespace = "followupapp", seed = {}
         submissions: [],
         pendingProof: { notes: "", photos: [] },
         reviewerNotes: "",
+        decisions: [],
         ...clone(task || {}),
       };
       if (!entry.id) {
@@ -164,13 +166,28 @@ export function createLocalStorageAdapter({ namespace = "followupapp", seed = {}
         ? submissions.find((entry) => entry.id === submissionId)
         : submissions[submissions.length - 1];
       if (!submission) return null;
-      if (status) {
-        submission.status = status;
-        taskEntry.task.status = status;
+      const decisionStatus =
+        status === TaskStatus.Approved || status === TaskStatus.Rejected ? status : null;
+      if (decisionStatus) {
+        submission.status = decisionStatus;
+        taskEntry.task.status = decisionStatus;
       }
       if (reviewerNotes !== undefined) {
         submission.reviewerNotes = reviewerNotes;
         taskEntry.task.reviewerNotes = reviewerNotes;
+      }
+      if (decisionStatus) {
+        const decisionRecord = {
+          id: createId("DEC"),
+          status: decisionStatus,
+          reviewerNotes: reviewerNotes ?? "",
+          submissionId: submission.id,
+          decidedAt: new Date().toISOString(),
+        };
+        if (!Array.isArray(taskEntry.task.decisions)) {
+          taskEntry.task.decisions = [];
+        }
+        taskEntry.task.decisions.push(decisionRecord);
       }
       persistAudits();
       return taskEntry.task;
