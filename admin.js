@@ -2,6 +2,7 @@ import {
   m365Directory,
   users,
   store,
+  storage,
   state,
   api,
   ensureSelectedAudit,
@@ -87,6 +88,8 @@ const screenMeta = {
     subtitle: "Manage audit access and review regional performance.",
   },
 };
+
+const cloneData = (value) => JSON.parse(JSON.stringify(value));
 
 const elements = {
   rosAdminApp: document.querySelector(".app--ros-admin"),
@@ -634,12 +637,12 @@ function showDraftAlert(message) {
 
 function getNextAuditId() {
   const year = new Date().getFullYear();
-  const index = String(store.audits.length + 1).padStart(3, "0");
+  const index = String(storage.listAudits().length + 1).padStart(3, "0");
   return `AUD-${year}-${index}`;
 }
 
 function getNextAuditFollowUpIteration() {
-  return String(store.audits.length + 1).padStart(3, "0");
+  return String(storage.listAudits().length + 1).padStart(3, "0");
 }
 
 function resetCreateAuditForm() {
@@ -763,7 +766,7 @@ function resolveNotificationRecipients(ruleList, recipientMap) {
 function dispatchMockAuditNotifications({ audit, assignee, reminderCadenceDays, deadline }) {
   if (!audit) return;
   const escalationRules = ensureEscalationRules(audit);
-  audit.escalationRules = escalationRules;
+  storage.updateAudit(audit.id, { escalationRules });
   const recipients = buildNotificationRecipients({ audit, assignee });
   const reminderRecipients = resolveNotificationRecipients(
     escalationRules.reminderRecipients,
@@ -781,9 +784,7 @@ function dispatchMockAuditNotifications({ audit, assignee, reminderCadenceDays, 
       : "Reminder";
 
   if (reminderRecipients.length) {
-    store.auditNotifications.unshift({
-      id: `NTF-${store.auditNotifications.length + 1}`,
-      auditId: audit.id,
+    storage.appendNotificationLog(audit.id, {
       type: "reminder",
       sentAt,
       cadenceDays: reminderCadenceDays,
@@ -793,9 +794,7 @@ function dispatchMockAuditNotifications({ audit, assignee, reminderCadenceDays, 
   }
 
   if (deadlineRecipients.length) {
-    store.auditNotifications.unshift({
-      id: `NTF-${store.auditNotifications.length + 1}`,
-      auditId: audit.id,
+    storage.appendNotificationLog(audit.id, {
       type: "deadline",
       sentAt,
       cadenceDays: reminderCadenceDays,
@@ -1427,8 +1426,9 @@ function removeTaskFromAudit(taskId) {
   const taskEntry = getTaskEntry(taskId);
   if (!taskEntry) return;
   const { audit, task } = taskEntry;
-  audit.tasks = audit.tasks.filter((entry) => entry.id !== task.id);
-  state.selectedTaskId = audit.tasks[0]?.id || null;
+  const updatedTasks = audit.tasks.filter((entry) => entry.id !== task.id);
+  storage.updateAudit(audit.id, { tasks: updatedTasks });
+  state.selectedTaskId = updatedTasks[0]?.id || null;
   renderAuditTaskSummary();
   renderTaskList();
   renderReviewerQueue();
@@ -1996,13 +1996,7 @@ function reorderAuditTasks(audit, draggedId, targetId) {
   if (draggedIndex < 0 || targetIndex < 0) return;
   const [draggedTask] = tasks.splice(draggedIndex, 1);
   tasks.splice(targetIndex, 0, draggedTask);
-  tasks.forEach((task, index) => {
-    if (!task) return;
-    const order = index + 1;
-    task.sortOrder = order;
-    task.SortOrder = order;
-  });
-  audit.tasks = tasks;
+  storage.reorderTasks(audit.id, tasks.map((task) => task.id));
 }
 
 function findCategoryById(auditType, categoryId) {
@@ -2032,8 +2026,7 @@ function ensureCategory(auditType, nameEn, nameFr) {
   return category;
 }
 
-function createTemplate({ titleEn, titleFr, categoryId, notesEn, notesFr, requiresProof }) {
-  const auditType = getSelectedAuditType();
+function createTemplate(auditType, { titleEn, titleFr, categoryId, notesEn, notesFr, requiresProof }) {
   const category = findCategoryById(auditType, categoryId);
   if (!category) return null;
   const trimmedTitleEn = titleEn.trim();
@@ -2094,27 +2087,25 @@ function assignTemplateToAudit(templateId, audit) {
     },
     reviewerNotes: "",
   };
-  audit.tasks.push(newTask);
+  storage.createTask(audit.id, newTask);
 }
 
 function handleAuditEmailSend() {
   const audit = getSelectedAudit();
   if (!audit) return;
   const language = elements.auditLanguageSelect?.value || getAuditLanguage(audit);
-  audit.language = language;
   const deadline = elements.auditDeadlineInput?.value || "";
-  audit.deadline = deadline;
   const reminderCadenceDays = getReminderCadenceFromInput(audit);
-  if (reminderCadenceDays !== null && reminderCadenceDays !== undefined) {
-    audit.reminderCadenceDays = reminderCadenceDays;
-  }
-  if (elements.auditSummaryInput) {
-    audit.summary = elements.auditSummaryInput.value.trim();
-  }
-  const draftAudit = buildAuditDraftFromForm(audit);
+  const draftAudit = {
+    ...buildAuditDraftFromForm(audit),
+    language,
+    deadline,
+    reminderCadenceDays,
+    summary: elements.auditSummaryInput?.value.trim() || "",
+  };
   const assignee = getAssigneeFromInput();
   const appLink = buildDefaultAuditLink(draftAudit.id || audit.id);
-  Object.assign(audit, draftAudit);
+  storage.updateAudit(audit.id, draftAudit);
   const template = generateAuditEmailTemplate({
     audit: draftAudit,
     assignee,
@@ -2268,20 +2259,18 @@ if (elements.saveDraftButton) {
     const audit = getSelectedAudit();
     if (!audit) return;
     const language = elements.auditLanguageSelect?.value || getAuditLanguage(audit);
-    audit.language = language;
     const deadline = elements.auditDeadlineInput?.value || "";
-    audit.deadline = deadline;
     const reminderCadenceDays = getReminderCadenceFromInput(audit);
-    if (reminderCadenceDays !== null && reminderCadenceDays !== undefined) {
-      audit.reminderCadenceDays = reminderCadenceDays;
-    }
-    if (elements.auditSummaryInput) {
-      audit.summary = elements.auditSummaryInput.value.trim();
-    }
-    const draftAudit = buildAuditDraftFromForm(audit);
+    const draftAudit = {
+      ...buildAuditDraftFromForm(audit),
+      language,
+      deadline,
+      reminderCadenceDays,
+      summary: elements.auditSummaryInput?.value.trim() || "",
+    };
     const assignee = getAssigneeFromInput();
     const appLink = buildDefaultAuditLink(draftAudit.id || audit.id);
-    Object.assign(audit, draftAudit);
+    storage.updateAudit(audit.id, draftAudit);
     renderAuditEmailPreview({ audit: draftAudit, assignee, language, deadline, appLink });
     showDraftAlert("Draft saved locally.");
   });
@@ -2310,10 +2299,12 @@ if (elements.saveAuditTypeButton) {
   elements.saveAuditTypeButton.addEventListener("click", () => {
     const auditType = getSelectedAuditType();
     if (!auditType) return;
-    auditType.name = {
+    const updatedAuditType = cloneData(auditType);
+    updatedAuditType.name = {
       en: elements.auditTypeNameInputEn?.value.trim() || elements.auditTypeNameInputFr?.value.trim() || "",
       fr: elements.auditTypeNameInputFr?.value.trim() || elements.auditTypeNameInputEn?.value.trim() || "",
     };
+    storage.replaceAuditType(auditType.id, updatedAuditType);
     renderAuditTypeLibrary();
     renderAuditTypeSelectOptions();
   });
@@ -2329,8 +2320,8 @@ if (elements.addAuditTypeButton) {
       },
       categories: [],
     };
-    store.auditTypes.push(newType);
-    selectedAuditTypeId = newType.id;
+    const createdType = storage.createAuditType(newType);
+    selectedAuditTypeId = createdType.id;
     renderAuditTypeLibrary();
     renderAuditTypeSelectOptions();
     renderCategoryOptions();
@@ -2351,8 +2342,8 @@ if (elements.deleteAuditTypeButton) {
       `Delete the ${formatBilingualText(auditType.name)} audit type and its ${auditType.categories.length} categories?`,
     );
     if (!confirmDelete) return;
-    store.auditTypes = store.auditTypes.filter((type) => type.id !== auditType.id);
-    selectedAuditTypeId = store.auditTypes[0]?.id || "";
+    storage.deleteAuditType(auditType.id);
+    selectedAuditTypeId = storage.listAuditTypes()[0]?.id || "";
     resetCategoryForm();
     resetTemplateForm();
     renderAuditTypeLibrary();
@@ -2367,11 +2358,12 @@ if (elements.saveCategoryButton) {
   elements.saveCategoryButton.addEventListener("click", () => {
     const auditType = getSelectedAuditType();
     if (!auditType) return;
+    const updatedAuditType = cloneData(auditType);
     const nameEn = elements.categoryNameInputEn?.value || "";
     const nameFr = elements.categoryNameInputFr?.value || "";
     if (!nameEn.trim() && !nameFr.trim()) return;
     if (editingCategoryId) {
-      const category = findCategoryById(auditType, editingCategoryId);
+      const category = findCategoryById(updatedAuditType, editingCategoryId);
       if (!category) return;
       category.name = {
         en: nameEn.trim() || nameFr.trim(),
@@ -2379,9 +2371,10 @@ if (elements.saveCategoryButton) {
       };
       resetCategoryForm();
     } else {
-      ensureCategory(auditType, nameEn, nameFr);
+      ensureCategory(updatedAuditType, nameEn, nameFr);
       resetCategoryForm();
     }
+    storage.replaceAuditType(updatedAuditType.id, updatedAuditType);
     renderCategoryOptions();
     renderCategoryList();
     renderTaskPool();
@@ -2403,8 +2396,9 @@ if (elements.copyCategoryButton) {
     const sourceType = getAuditTypeById(sourceTypeId);
     const sourceCategory = findCategoryById(sourceType, sourceCategoryId);
     if (!sourceCategory) return;
+    const updatedAuditType = cloneData(auditType);
     const targetCategory = ensureCategory(
-      auditType,
+      updatedAuditType,
       getLocalizedValue(sourceCategory.name, "en"),
       getLocalizedValue(sourceCategory.name, "fr"),
     );
@@ -2418,6 +2412,7 @@ if (elements.copyCategoryButton) {
         requiresProof: template.requiresProof ?? true,
       });
     });
+    storage.replaceAuditType(updatedAuditType.id, updatedAuditType);
     renderCategoryOptions();
     renderCategoryList();
     renderTaskPool();
@@ -2428,8 +2423,11 @@ if (elements.auditTypeSelect) {
   elements.auditTypeSelect.addEventListener("change", (event) => {
     const audit = getSelectedAudit();
     if (!audit) return;
-    audit.auditType = event.target.value;
-    audit.categoryOptions = getCategoryOptionsForAudit(audit);
+    const updates = {
+      auditType: event.target.value,
+    };
+    updates.categoryOptions = getCategoryOptionsForAudit({ ...audit, ...updates });
+    storage.updateAudit(audit.id, updates);
     renderTaskTemplatePicker();
     renderTaskDetail();
   });
@@ -2444,7 +2442,8 @@ elements.addTaskButton.addEventListener("click", () => {
   const requiresProof = elements.taskProofRequiredInput?.checked;
   if (editingTemplateRef) {
     const auditType = getSelectedAuditType();
-    const category = findCategoryById(auditType, categoryId || editingTemplateRef.categoryId);
+    const updatedAuditType = cloneData(auditType);
+    const category = findCategoryById(updatedAuditType, categoryId || editingTemplateRef.categoryId);
     const template = category?.tasks.find((task) => task.id === editingTemplateRef.templateId);
     if (!category || !template) return;
     template.title = {
@@ -2458,9 +2457,20 @@ elements.addTaskButton.addEventListener("click", () => {
     template.requiresProof = requiresProof === undefined ? true : requiresProof;
     editingTemplateRef = null;
     if (elements.addTaskButton) elements.addTaskButton.textContent = "Add Task";
+    storage.replaceAuditType(updatedAuditType.id, updatedAuditType);
   } else {
-    const template = createTemplate({ titleEn, titleFr, categoryId, notesEn, notesFr, requiresProof });
+    const auditType = getSelectedAuditType();
+    const updatedAuditType = cloneData(auditType);
+    const template = createTemplate(updatedAuditType, {
+      titleEn,
+      titleFr,
+      categoryId,
+      notesEn,
+      notesFr,
+      requiresProof,
+    });
     if (!template) return;
+    storage.replaceAuditType(updatedAuditType.id, updatedAuditType);
   }
   resetTemplateForm();
   renderTaskTemplatePicker();
@@ -2509,7 +2519,7 @@ if (elements.taskDetailDueInput) {
     if (clamped !== event.target.value) {
       event.target.value = clamped;
     }
-    taskEntry.task.dueDate = clamped;
+    storage.updateTask(taskEntry.audit.id, taskEntry.task.id, { dueDate: clamped });
     elements.taskDue.textContent = formatDate(clamped);
     renderTaskList();
     renderReviewerQueue();
@@ -2522,7 +2532,7 @@ if (elements.taskDetailCategoryInput) {
   elements.taskDetailCategoryInput.addEventListener("change", (event) => {
     const taskEntry = getTaskEntry(state.selectedTaskId);
     if (!taskEntry) return;
-    taskEntry.task.category = event.target.value;
+    storage.updateTask(taskEntry.audit.id, taskEntry.task.id, { category: event.target.value });
     elements.taskCategory.textContent = event.target.value;
     renderTaskList();
     renderReviewerQueue();
@@ -2537,11 +2547,14 @@ if (elements.taskDetailAssigneeInput) {
     const match = m365Directory.contacts.find(
       (contact) => contact.displayName === value || contact.email === value,
     );
-    taskEntry.task.assignedTo = match?.displayName || value || "Unassigned";
-    taskEntry.task.assignedEmail = match?.email || "";
-    taskEntry.task.assignedUserId = users.find((user) => user.email === match?.email)?.id || null;
-    elements.taskAssignee.textContent = taskEntry.task.assignedTo || "Unassigned";
-    elements.taskAssigneeEmail.textContent = taskEntry.task.assignedEmail || "";
+    const updates = {
+      assignedTo: match?.displayName || value || "Unassigned",
+      assignedEmail: match?.email || "",
+      assignedUserId: users.find((user) => user.email === match?.email)?.id || null,
+    };
+    const updatedTask = storage.updateTask(taskEntry.audit.id, taskEntry.task.id, updates);
+    elements.taskAssignee.textContent = updatedTask?.assignedTo || "Unassigned";
+    elements.taskAssigneeEmail.textContent = updatedTask?.assignedEmail || "";
     renderTaskList();
     renderStoreManager();
   });
@@ -2551,7 +2564,7 @@ if (elements.taskDetailProofInput) {
   elements.taskDetailProofInput.addEventListener("change", (event) => {
     const taskEntry = getTaskEntry(state.selectedTaskId);
     if (!taskEntry) return;
-    taskEntry.task.requiresProof = event.target.checked;
+    storage.updateTask(taskEntry.audit.id, taskEntry.task.id, { requiresProof: event.target.checked });
     elements.taskProofRequired.textContent = event.target.checked ? "Yes" : "No";
     renderTaskDetail();
     renderStoreManager();
@@ -2589,16 +2602,16 @@ if (elements.auditLanguageSelect) {
   elements.auditLanguageSelect.addEventListener("change", (event) => {
     const audit = getSelectedAudit();
     if (!audit) return;
-    audit.language = event.target.value;
-    renderEmailSettingsForm(audit.language);
-    const draftAudit = buildAuditDraftFromForm(audit);
+    const updatedAudit = storage.updateAudit(audit.id, { language: event.target.value });
+    renderEmailSettingsForm(updatedAudit?.language || event.target.value);
+    const draftAudit = buildAuditDraftFromForm(updatedAudit || audit);
     const assignee = getAssigneeFromInput();
-    const deadline = elements.auditDeadlineInput?.value || audit.deadline || "";
+    const deadline = elements.auditDeadlineInput?.value || updatedAudit?.deadline || audit.deadline || "";
     const appLink = buildDefaultAuditLink(draftAudit.id || audit.id);
     renderAuditEmailPreview({
       audit: draftAudit,
       assignee,
-      language: audit.language,
+      language: updatedAudit?.language || event.target.value,
       deadline,
       appLink,
     });

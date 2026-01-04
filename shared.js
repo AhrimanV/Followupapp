@@ -1,4 +1,5 @@
 import { TaskStatus } from "./models/domainModel.js";
+import { createLocalStorageAdapter } from "./storage/localStorageAdapter.js";
 
 export function showNotification(message, { tone = "info", duration = 3200 } = {}) {
   const toast = document.getElementById("toast-banner");
@@ -148,7 +149,7 @@ export const users = [
   },
 ];
 
-export const store = {
+const initialStore = {
   auditTypes: [
     {
       id: "ATY-1001",
@@ -521,6 +522,13 @@ export const store = {
   auditNotifications: [],
 };
 
+export const storage = createLocalStorageAdapter({
+  namespace: "followupapp",
+  seed: initialStore,
+});
+
+export const store = storage.getStore();
+
 export const state = {
   selectedAuditId: "AUD-2025-001",
   selectedTaskId: "AT-2003",
@@ -668,44 +676,40 @@ export const api = {
   async uploadProof({ taskId, notes, photos }) {
     const taskEntry = getTaskEntry(taskId);
     if (!taskEntry) return null;
-    taskEntry.task.pendingProof = {
-      notes: notes || "",
-      photos: photos || [],
-    };
-    return taskEntry.task;
+    return storage.updateTask(taskEntry.audit.id, taskEntry.task.id, {
+      pendingProof: {
+        notes: notes || "",
+        photos: photos || [],
+      },
+    });
   },
   async submitProof({ taskId }) {
     const taskEntry = getTaskEntry(taskId);
     if (!taskEntry) return null;
     const task = taskEntry.task;
-    const proof = task.pendingProof;
-    const nextId = `SUB-${task.submissions.length + 1}`;
-    const submission = {
-      id: nextId,
-      submittedAt: new Date().toISOString(),
+    const proof = task.pendingProof || { notes: "", photos: [] };
+    const submission = storage.createSubmission(taskEntry.audit.id, taskEntry.task.id, {
       status: TaskStatus.ProofSubmitted,
       notes: proof.notes,
       photos: proof.photos,
       reviewerNotes: "",
-    };
-    task.submissions.push(submission);
-    task.status = TaskStatus.ProofSubmitted;
-    task.reviewerNotes = "";
-    task.pendingProof = { notes: "", photos: [] };
+    });
+    storage.updateTask(taskEntry.audit.id, taskEntry.task.id, {
+      reviewerNotes: "",
+      pendingProof: { notes: "", photos: [] },
+    });
     return submission;
   },
   async reviewSubmission({ taskId, decision, reviewerNotes }) {
     const taskEntry = getTaskEntry(taskId);
     if (!taskEntry) return null;
-    const task = taskEntry.task;
-    const latestSubmission = task.submissions[task.submissions.length - 1];
-    if (!latestSubmission) {
+    const task = storage.createDecision(taskEntry.audit.id, taskEntry.task.id, {
+      status: decision,
+      reviewerNotes,
+    });
+    if (!task) {
       throw new Error("No submission found for task.");
     }
-    latestSubmission.status = decision;
-    latestSubmission.reviewerNotes = reviewerNotes;
-    task.status = decision;
-    task.reviewerNotes = reviewerNotes;
     return task;
   },
 };
@@ -790,7 +794,7 @@ export function syncStoreManagerLocaleFromAudit(audit, localeSelect) {
 }
 
 export function getAuditById(auditId) {
-  return store.audits.find((audit) => audit.id === auditId) || null;
+  return storage.getAudit(auditId);
 }
 
 export function getTaskEntry(taskId) {
@@ -1045,15 +1049,11 @@ export function generateAuditEmailTemplate({ audit, assignee, language, deadline
 
 export function logAuditEmailSend(payload) {
   const safePayload = payload && typeof payload === "object" ? payload : {};
-  const sendEvent = {
-    id: `EMAIL-${store.auditEmailSends.length + 1}`,
+  return storage.appendAuditEmailSend({
     ...safePayload,
     auditId: safePayload.auditId || "",
-    sentAt: new Date().toISOString(),
     subject: safePayload.subject || "",
-  };
-  store.auditEmailSends.unshift(sendEvent);
-  return sendEvent;
+  });
 }
 
 export function getStatusBadgeClass(status) {
