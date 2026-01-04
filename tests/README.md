@@ -38,3 +38,9 @@ The script validates that:
 4. Switch to the **Store Manager** view, submit proof for the assigned task, and confirm it
    appears in the **Reviewer Queue**.
 5. Check the notification log to confirm audit creation and proof submission messages.
+
+## Dev harness (manual only)
+
+For local QA, open `tests/dev-harness.html` in a browser. It loads `admin.html` and
+`store-manager.html` in iframes and reports runtime errors (PASS/FAIL). This file is
+for development use only and is not part of production builds.

@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Followupapp Dev Harness</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+        background: #f7f7f7;
+        color: #1f2933;
+      }
+      h1 {
+        margin-bottom: 6px;
+      }
+      .summary {
+        display: flex;
+        gap: 16px;
+        align-items: center;
+        margin-bottom: 16px;
+      }
+      .badge {
+        padding: 6px 12px;
+        border-radius: 999px;
+        font-weight: 600;
+        font-size: 14px;
+      }
+      .badge.pass {
+        background: #daf5d7;
+        color: #1c6b2e;
+      }
+      .badge.fail {
+        background: #fde2e1;
+        color: #b42318;
+      }
+      .panels {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 16px;
+      }
+      .panel {
+        background: #fff;
+        padding: 12px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+      }
+      iframe {
+        width: 100%;
+        height: 360px;
+        border: 1px solid #d9dde3;
+        border-radius: 6px;
+      }
+      .error {
+        margin-top: 10px;
+        padding: 10px;
+        border-radius: 6px;
+        background: #fff4f4;
+        border: 1px solid #f5b5b5;
+        font-size: 13px;
+        white-space: pre-wrap;
+      }
+      .status {
+        font-weight: 600;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Followupapp Dev Harness</h1>
+    <p>Loads admin and store manager views, reporting any runtime errors.</p>
+
+    <div class="summary">
+      <span id="overallBadge" class="badge pass">PASS</span>
+      <span id="overallMessage">No errors captured yet.</span>
+    </div>
+
+    <div class="panels">
+      <div class="panel">
+        <div class="status" id="adminStatus">Admin: PASS</div>
+        <div id="adminError" class="error" hidden></div>
+        <iframe id="adminFrame" src="../admin.html" title="Admin"></iframe>
+      </div>
+      <div class="panel">
+        <div class="status" id="storeStatus">Store Manager: PASS</div>
+        <div id="storeError" class="error" hidden></div>
+        <iframe id="storeFrame" src="../store-manager.html" title="Store Manager"></iframe>
+      </div>
+    </div>
+
+    <script>
+      const results = {
+        admin: { status: 'PASS', error: null },
+        store: { status: 'PASS', error: null },
+      };
+
+      const elements = {
+        overallBadge: document.getElementById('overallBadge'),
+        overallMessage: document.getElementById('overallMessage'),
+        adminStatus: document.getElementById('adminStatus'),
+        adminError: document.getElementById('adminError'),
+        storeStatus: document.getElementById('storeStatus'),
+        storeError: document.getElementById('storeError'),
+      };
+
+      const formatError = (message, error) => {
+        if (error && error.stack) {
+          return `${message}\n${error.stack}`;
+        }
+        return message;
+      };
+
+      const updateUI = () => {
+        const hasError = Object.values(results).some((result) => result.status === 'FAIL');
+        elements.overallBadge.textContent = hasError ? 'FAIL' : 'PASS';
+        elements.overallBadge.className = `badge ${hasError ? 'fail' : 'pass'}`;
+        if (hasError) {
+          const firstError = Object.values(results).find((result) => result.error);
+          elements.overallMessage.textContent = firstError.error || 'Runtime error captured.';
+        } else {
+          elements.overallMessage.textContent = 'No errors captured yet.';
+        }
+
+        elements.adminStatus.textContent = `Admin: ${results.admin.status}`;
+        elements.storeStatus.textContent = `Store Manager: ${results.store.status}`;
+
+        if (results.admin.error) {
+          elements.adminError.hidden = false;
+          elements.adminError.textContent = results.admin.error;
+        }
+        if (results.store.error) {
+          elements.storeError.hidden = false;
+          elements.storeError.textContent = results.store.error;
+        }
+      };
+
+      const recordError = (key, message, error) => {
+        if (results[key].status === 'FAIL') {
+          return;
+        }
+        results[key].status = 'FAIL';
+        results[key].error = formatError(message, error);
+        updateUI();
+      };
+
+      const handleConsoleError = (key, args) => {
+        const first = args[0];
+        const message = args
+          .map((arg) => {
+            if (arg instanceof Error) {
+              return arg.message;
+            }
+            if (typeof arg === 'object') {
+              try {
+                return JSON.stringify(arg);
+              } catch (err) {
+                return String(arg);
+              }
+            }
+            return String(arg);
+          })
+          .join(' ');
+        const error = first instanceof Error ? first : null;
+        recordError(key, message || 'console.error called', error);
+      };
+
+      const installHooks = (iframe, key) => {
+        iframe.addEventListener('load', () => {
+          const frameWindow = iframe.contentWindow;
+          if (!frameWindow) {
+            recordError(key, 'Unable to access iframe window.');
+            return;
+          }
+          const originalConsoleError = frameWindow.console.error.bind(frameWindow.console);
+          frameWindow.console.error = (...args) => {
+            handleConsoleError(key, args);
+            originalConsoleError(...args);
+          };
+
+          frameWindow.onerror = (message, source, lineno, colno, error) => {
+            const location = source ? ` at ${source}:${lineno}:${colno}` : '';
+            recordError(key, `${message}${location}`, error);
+            return false;
+          };
+        });
+      };
+
+      installHooks(document.getElementById('adminFrame'), 'admin');
+      installHooks(document.getElementById('storeFrame'), 'store');
+    </script>
+  </body>
+</html>
