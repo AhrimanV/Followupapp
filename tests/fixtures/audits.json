@@ -50,8 +50,8 @@
               "id": "SUB-TEST-01",
               "submittedAt": "2025-03-12T14:35:00Z",
               "status": "PROOF_SUBMITTED",
-              "notes": "Labels refreshed with new SKU numbers.",
-              "photos": ["label-aisle-1.jpg", "label-aisle-2.jpg"],
+              "comment": "Labels refreshed with new SKU numbers.",
+              "proofLinks": ["label-aisle-1.jpg", "label-aisle-2.jpg"],
               "reviewerNotes": ""
             }
           ],

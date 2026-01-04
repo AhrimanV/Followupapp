@@ -53,7 +53,7 @@ function validateSubmissions(submissions, taskMap) {
     const key = `${submission.auditId}:${submission.taskId}`;
     const task = taskMap.get(key);
     assert(task, `Submission references missing task ${key}.`);
-    assert(submission.photos?.length, `Submission ${submission.id} needs proof photos.`);
+    assert(submission.proofLinks?.length, `Submission ${submission.id} needs proof links.`);
     assert(
       task.submissions.some((entry) => entry.id === submission.id),
       `Audit task ${key} should include submission ${submission.id}.`

@@ -416,8 +416,8 @@ const initialStore = {
               id: "SUB-2",
               submittedAt: "2025-02-15T11:32:00Z",
               status: TaskStatus.ProofSubmitted,
-              notes: "Updated tags for back room units.",
-              photos: [
+              comment: "Updated tags for back room units.",
+              proofLinks: [
                 "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=400&q=80",
                 "https://images.unsplash.com/photo-1523413651479-597eb2da0ad6?auto=format&fit=crop&w=400&q=80",
                 "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=400&q=80",
@@ -473,8 +473,8 @@ const initialStore = {
               id: "SUB-1",
               submittedAt: "2025-02-18T15:10:00Z",
               status: TaskStatus.ProofSubmitted,
-              notes: "Nouveaux luminaires installés près de la zone de chargement.",
-              photos: [
+              comment: "Nouveaux luminaires installés près de la zone de chargement.",
+              proofLinks: [
                 "https://images.unsplash.com/photo-1489515217757-5fd1be406fef?auto=format&fit=crop&w=400&q=80",
                 "https://images.unsplash.com/photo-1519710164239-da123dc03ef4?auto=format&fit=crop&w=400&q=80",
               ],
@@ -504,8 +504,8 @@ const initialStore = {
               id: "SUB-1",
               submittedAt: "2025-02-16T09:18:00Z",
               status: TaskStatus.Approved,
-              notes: "Affiches mises à jour dans la salle de pause et le back office.",
-              photos: [
+              comment: "Affiches mises à jour dans la salle de pause et le back office.",
+              proofLinks: [
                 "https://images.unsplash.com/photo-1494526585095-c41746248156?auto=format&fit=crop&w=400&q=80",
               ],
               reviewerNotes: "Très bien.",
@@ -563,8 +563,9 @@ const storeManagerLocaleContent = {
     overdueLabel: "Overdue",
     managerNotesLabel: "Manager notes:",
     reviewerNotesLabel: "Reviewer notes:",
-    proofUploadLabel: "Proof upload",
-    proofUploadRequired: "Please add at least one photo before submitting.",
+    proofUploadLabel: "Proof links",
+    proofUploadRequired: "Please add at least one link before submitting.",
+    proofUploadPlaceholder: "Paste one or more URLs (one per line).",
     notesToReviewerLabel: "Notes to reviewer",
     notesPlaceholder: "Add context for the reviewer...",
     actionCompleted: "Completed",
@@ -573,7 +574,7 @@ const storeManagerLocaleContent = {
     actionSubmit: "Submit Proof",
     submissionCount: (count) => `Submission #${count}`,
     noTasksAssigned: "No tasks assigned to you for this audit.",
-    proofOptionalNote: "Proof upload not required for this task.",
+    proofOptionalNote: "Proof links are not required for this task.",
   },
   fr: {
     dateLocale: "fr-CA",
@@ -596,8 +597,9 @@ const storeManagerLocaleContent = {
     overdueLabel: "En retard",
     managerNotesLabel: "Notes du responsable :",
     reviewerNotesLabel: "Notes du réviseur :",
-    proofUploadLabel: "Téléversement des preuves",
-    proofUploadRequired: "Ajoutez au moins une photo avant de soumettre.",
+    proofUploadLabel: "Liens de preuve",
+    proofUploadRequired: "Ajoutez au moins un lien avant de soumettre.",
+    proofUploadPlaceholder: "Collez une ou plusieurs URL (une par ligne).",
     notesToReviewerLabel: "Notes au réviseur",
     notesPlaceholder: "Ajoutez du contexte pour le réviseur...",
     actionCompleted: "Terminé",
@@ -606,7 +608,7 @@ const storeManagerLocaleContent = {
     actionSubmit: "Soumettre la preuve",
     submissionCount: (count) => `Soumission nº${count}`,
     noTasksAssigned: "Aucune tâche ne vous est assignée pour cet audit.",
-    proofOptionalNote: "Le téléversement de preuves n'est pas requis pour cette tâche.",
+    proofOptionalNote: "Les liens de preuve ne sont pas requis pour cette tâche.",
   },
 };
 
@@ -675,30 +677,18 @@ function getEmailTemplate(locale) {
 }
 
 export const api = {
-  async uploadProof({ taskId, notes, photos }) {
+  async createSubmission({ taskId, comment, proofLinks }) {
     const taskEntry = getTaskEntry(taskId);
     if (!taskEntry) return null;
-    return storage.updateTask(taskEntry.audit.id, taskEntry.task.id, {
-      pendingProof: {
-        notes: notes || "",
-        photos: photos || [],
-      },
-    });
-  },
-  async submitProof({ taskId }) {
-    const taskEntry = getTaskEntry(taskId);
-    if (!taskEntry) return null;
-    const task = taskEntry.task;
-    const proof = task.pendingProof || { notes: "", photos: [] };
     const submission = storage.createSubmission(taskEntry.audit.id, taskEntry.task.id, {
       status: TaskStatus.ProofSubmitted,
-      notes: proof.notes,
-      photos: proof.photos,
+      comment: comment || "",
+      proofLinks: Array.isArray(proofLinks) ? proofLinks : [],
       reviewerNotes: "",
     });
     storage.updateTask(taskEntry.audit.id, taskEntry.task.id, {
+      status: TaskStatus.ProofSubmitted,
       reviewerNotes: "",
-      pendingProof: { notes: "", photos: [] },
     });
     return submission;
   },
@@ -871,7 +861,9 @@ export function getVisibleTasksForAudit(audit) {
 export function getLatestPendingSubmission(audits) {
   const allTasks = audits.flatMap((audit) => audit.tasks.map((task) => ({ audit, task })));
   const submissions = allTasks.flatMap(({ audit, task }) =>
-    task.submissions.map((submission) => ({ audit, task, submission })),
+    storage
+      .listSubmissions(audit.id, task.id)
+      .map((submission) => ({ audit, task, submission })),
   );
   return submissions
     .filter((entry) => entry.submission.status === TaskStatus.ProofSubmitted)
@@ -1285,69 +1277,69 @@ export function renderStoreManagerView(elements, { onTaskUpdated } = {}) {
             ? `
         <label class="field">
           ${strings.proofUploadLabel}
-          <input type="file" multiple data-task-id="${task.id}" />
-          <p class="field-error hidden" id="task-file-error-${task.id}" role="alert" data-task-file-error="${task.id}">${strings.proofUploadRequired}</p>
+          <textarea rows="2" data-task-links="${task.id}" placeholder="${strings.proofUploadPlaceholder}"></textarea>
+          <p class="field-error hidden" id="task-link-error-${task.id}" role="alert" data-task-link-error="${task.id}">${strings.proofUploadRequired}</p>
         </label>
         `
             : `<p class="muted">${strings.proofOptionalNote}</p>`
         }
         <label class="field">
           ${strings.notesToReviewerLabel}
-          <textarea rows="3" data-task-notes="${task.id}" placeholder="${strings.notesPlaceholder}">${
-            task.pendingProof?.notes || ""
-          }</textarea>
+          <textarea rows="3" data-task-notes="${task.id}" placeholder="${strings.notesPlaceholder}"></textarea>
         </label>
         <div class="manager-task-actions">
           <button class="${disableAction ? "secondary" : "primary"}" data-task-action="${
             task.id
           }" ${disableAction ? "disabled" : ""}>${actionLabel}</button>
-          <span class="subtext">${strings.submissionCount(task.submissions.length)}</span>
+          <span class="subtext">${strings.submissionCount(storage.listSubmissions(audit.id, task.id).length)}</span>
         </div>
       </div>
     `;
 
     const actionButton = taskCard.querySelector("[data-task-action]");
     const notesField = taskCard.querySelector("[data-task-notes]");
-    const fileInput = taskCard.querySelector("input[type='file']");
-    const fileError = taskCard.querySelector("[data-task-file-error]");
+    const linksField = taskCard.querySelector("[data-task-links]");
+    const linkError = taskCard.querySelector("[data-task-link-error]");
 
     actionButton.addEventListener("click", async () => {
       const notes = notesField.value.trim();
-      const photos = Array.from(fileInput?.files || []).map((file) => file.name);
-      if (requiresProof && (!fileInput?.files || fileInput.files.length === 0)) {
-        if (fileError) {
-          fileError.classList.remove("hidden");
+      const proofLinks = (linksField?.value || "")
+        .split(/[\n,]+/)
+        .map((link) => link.trim())
+        .filter(Boolean);
+      if (requiresProof && proofLinks.length === 0) {
+        if (linkError) {
+          linkError.classList.remove("hidden");
         }
-        if (fileInput) {
-          fileInput.setAttribute("aria-invalid", "true");
-          if (fileError?.id) {
-            fileInput.setAttribute("aria-describedby", fileError.id);
+        if (linksField) {
+          linksField.setAttribute("aria-invalid", "true");
+          if (linkError?.id) {
+            linksField.setAttribute("aria-describedby", linkError.id);
           }
-          fileInput.focus();
+          linksField.focus();
         }
         return;
       }
-      if (fileError) {
-        fileError.classList.add("hidden");
+      if (linkError) {
+        linkError.classList.add("hidden");
       }
-      if (fileInput) {
-        fileInput.removeAttribute("aria-invalid");
-        fileInput.removeAttribute("aria-describedby");
+      if (linksField) {
+        linksField.removeAttribute("aria-invalid");
+        linksField.removeAttribute("aria-describedby");
       }
-      await api.uploadProof({ taskId: task.id, notes, photos });
-      await api.submitProof({ taskId: task.id });
+      await api.createSubmission({ taskId: task.id, comment: notes, proofLinks });
       if (onTaskUpdated) {
         onTaskUpdated();
       }
       renderStoreManagerView(elements, { onTaskUpdated });
     });
 
-    if (fileInput) {
-      fileInput.addEventListener("change", () => {
-        if (fileError && fileInput.files && fileInput.files.length > 0) {
-          fileError.classList.add("hidden");
-          fileInput.removeAttribute("aria-invalid");
-          fileInput.removeAttribute("aria-describedby");
+    if (linksField) {
+      linksField.addEventListener("input", () => {
+        if (linkError && linksField.value.trim().length > 0) {
+          linkError.classList.add("hidden");
+          linksField.removeAttribute("aria-invalid");
+          linksField.removeAttribute("aria-describedby");
         }
       });
     }
