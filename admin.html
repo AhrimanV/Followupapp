@@ -664,6 +664,50 @@
               <div class="profile-list" id="profile-list"></div>
             </div>
           </div>
+          <div class="card">
+            <h3>Payload Builder</h3>
+            <p class="muted">Generate launch, reminder, and decision payloads from stored audit data.</p>
+            <div class="filter-grid">
+              <label class="field">
+                Audit
+                <select id="payload-audit-select"></select>
+              </label>
+              <label class="field">
+                Payload type
+                <select id="payload-type-select">
+                  <option value="launch">Launch email</option>
+                  <option value="reminder">Reminder</option>
+                  <option value="decision">Decision</option>
+                </select>
+              </label>
+              <label class="field hidden" id="payload-reminder-mode-field">
+                Reminder mode
+                <select id="payload-reminder-mode-select">
+                  <option value="reminder">Reminder</option>
+                  <option value="deadline">Deadline escalation</option>
+                </select>
+              </label>
+              <label class="field hidden" id="payload-task-field">
+                Task
+                <select id="payload-task-select"></select>
+              </label>
+              <label class="field hidden" id="payload-decision-field">
+                Decision
+                <select id="payload-decision-select">
+                  <option value="Approved">Approved</option>
+                  <option value="Rejected">Rejected</option>
+                </select>
+              </label>
+            </div>
+            <div class="actions">
+              <button class="secondary" id="payload-copy-button">Copy JSON</button>
+              <button class="secondary" id="payload-download-button">Download JSON</button>
+            </div>
+            <label class="field">
+              Payload preview
+              <textarea id="payload-output" rows="10" readonly></textarea>
+            </label>
+          </div>
         </section>
       </main>
     </div>
