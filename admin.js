@@ -45,6 +45,11 @@ import {
   syncStoreManagerLocaleFromAudit,
 } from "./shared.js";
 import { AuditStatus, TaskStatus } from "./models/domainModel.js";
+import {
+  buildDecisionPayload,
+  buildLaunchEmailPayload,
+  buildReminderPayload,
+} from "./flows/payloadBuilder.js";
 
 const navButtons = Array.from(document.querySelectorAll(".nav-item"));
 const screens = document.querySelectorAll(".content");
@@ -157,6 +162,17 @@ const elements = {
   adminFilterStart: document.getElementById("admin-filter-start"),
   adminFilterEnd: document.getElementById("admin-filter-end"),
   adminAuditRows: document.getElementById("admin-audit-rows"),
+  payloadAuditSelect: document.getElementById("payload-audit-select"),
+  payloadTypeSelect: document.getElementById("payload-type-select"),
+  payloadReminderModeField: document.getElementById("payload-reminder-mode-field"),
+  payloadReminderModeSelect: document.getElementById("payload-reminder-mode-select"),
+  payloadTaskField: document.getElementById("payload-task-field"),
+  payloadTaskSelect: document.getElementById("payload-task-select"),
+  payloadDecisionField: document.getElementById("payload-decision-field"),
+  payloadDecisionSelect: document.getElementById("payload-decision-select"),
+  payloadCopyButton: document.getElementById("payload-copy-button"),
+  payloadDownloadButton: document.getElementById("payload-download-button"),
+  payloadOutput: document.getElementById("payload-output"),
   homeOpenAudits: document.getElementById("home-open-audits"),
   homeOpenAuditsButton: document.getElementById("home-open-audits-button"),
   homeOverdueAudits: document.getElementById("home-overdue-audits"),
@@ -1915,6 +1931,125 @@ function renderAdminOverview() {
   });
 }
 
+function updatePayloadBuilderVisibility() {
+  if (!elements.payloadTypeSelect) return;
+  const type = elements.payloadTypeSelect.value;
+  if (elements.payloadReminderModeField) {
+    elements.payloadReminderModeField.classList.toggle("hidden", type !== "reminder");
+  }
+  if (elements.payloadTaskField) {
+    elements.payloadTaskField.classList.toggle("hidden", type !== "decision");
+  }
+  if (elements.payloadDecisionField) {
+    elements.payloadDecisionField.classList.toggle("hidden", type !== "decision");
+  }
+}
+
+function renderPayloadBuilderAudits() {
+  if (!elements.payloadAuditSelect) return;
+  const audits = storage.listAudits();
+  const current = elements.payloadAuditSelect.value;
+  elements.payloadAuditSelect.innerHTML = "";
+
+  if (!audits.length) {
+    const option = document.createElement("option");
+    option.value = "";
+    option.textContent = "No audits available";
+    elements.payloadAuditSelect.appendChild(option);
+    return;
+  }
+
+  audits.forEach((audit) => {
+    const option = document.createElement("option");
+    option.value = audit.id;
+    option.textContent = `${audit.id} — ${audit.storeName || "Unnamed store"}`;
+    if (audit.id === current) option.selected = true;
+    elements.payloadAuditSelect.appendChild(option);
+  });
+}
+
+function renderPayloadBuilderTasks() {
+  if (!elements.payloadTaskSelect || !elements.payloadAuditSelect) return;
+  const auditId = elements.payloadAuditSelect.value;
+  const tasks = auditId ? storage.listTasks(auditId) : [];
+  const current = elements.payloadTaskSelect.value;
+  elements.payloadTaskSelect.innerHTML = "";
+
+  if (!tasks.length) {
+    const option = document.createElement("option");
+    option.value = "";
+    option.textContent = "No tasks available";
+    elements.payloadTaskSelect.appendChild(option);
+    return;
+  }
+
+  tasks.forEach((task) => {
+    const option = document.createElement("option");
+    option.value = task.id;
+    option.textContent = `${task.id} — ${task.title || "Untitled task"}`;
+    if (task.id === current) option.selected = true;
+    elements.payloadTaskSelect.appendChild(option);
+  });
+}
+
+function buildPayloadFromSelection() {
+  if (!elements.payloadTypeSelect || !elements.payloadAuditSelect) return null;
+  const auditId = elements.payloadAuditSelect.value;
+  const type = elements.payloadTypeSelect.value;
+  if (!auditId) return null;
+
+  if (type === "launch") {
+    return buildLaunchEmailPayload(auditId);
+  }
+  if (type === "reminder") {
+    const mode = elements.payloadReminderModeSelect?.value || "reminder";
+    return buildReminderPayload(auditId, mode);
+  }
+  if (type === "decision") {
+    const taskId = elements.payloadTaskSelect?.value;
+    const decision = elements.payloadDecisionSelect?.value || "Approved";
+    if (!taskId) return null;
+    return buildDecisionPayload(taskId, decision);
+  }
+  return null;
+}
+
+function renderPayloadBuilderOutput() {
+  if (!elements.payloadOutput) return;
+  const payload = buildPayloadFromSelection();
+  if (!payload) {
+    elements.payloadOutput.value = "Select an audit and payload options to preview JSON.";
+    return;
+  }
+  elements.payloadOutput.value = JSON.stringify(payload, null, 2);
+}
+
+function downloadPayloadJson(payload) {
+  const json = JSON.stringify(payload, null, 2);
+  const blob = new Blob([json], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = `payload-${payload.auditId || "audit"}.json`;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
+}
+
+async function copyPayloadJson(payload) {
+  const json = JSON.stringify(payload, null, 2);
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(json);
+    return;
+  }
+  if (elements.payloadOutput) {
+    elements.payloadOutput.focus();
+    elements.payloadOutput.select();
+    document.execCommand("copy");
+  }
+}
+
 function renderProfiles() {
   elements.profileList.innerHTML = "";
   const canEditRoles = isAdmin();
@@ -2658,6 +2793,61 @@ if (elements.adminMessageReviewerButton) {
   });
 }
 
+if (elements.payloadTypeSelect) {
+  elements.payloadTypeSelect.addEventListener("change", () => {
+    updatePayloadBuilderVisibility();
+    renderPayloadBuilderOutput();
+  });
+}
+
+if (elements.payloadAuditSelect) {
+  elements.payloadAuditSelect.addEventListener("change", () => {
+    renderPayloadBuilderTasks();
+    renderPayloadBuilderOutput();
+  });
+}
+
+if (elements.payloadReminderModeSelect) {
+  elements.payloadReminderModeSelect.addEventListener("change", renderPayloadBuilderOutput);
+}
+
+if (elements.payloadTaskSelect) {
+  elements.payloadTaskSelect.addEventListener("change", renderPayloadBuilderOutput);
+}
+
+if (elements.payloadDecisionSelect) {
+  elements.payloadDecisionSelect.addEventListener("change", renderPayloadBuilderOutput);
+}
+
+if (elements.payloadCopyButton) {
+  elements.payloadCopyButton.addEventListener("click", async () => {
+    const payload = buildPayloadFromSelection();
+    if (!payload) {
+      showNotification("Select an audit and payload options first.", { tone: "warning" });
+      return;
+    }
+    try {
+      await copyPayloadJson(payload);
+      showNotification("Payload copied to clipboard.", { tone: "success" });
+    } catch (error) {
+      console.warn("Unable to copy payload.", error);
+      showNotification("Unable to copy payload to clipboard.", { tone: "warning" });
+    }
+  });
+}
+
+if (elements.payloadDownloadButton) {
+  elements.payloadDownloadButton.addEventListener("click", () => {
+    const payload = buildPayloadFromSelection();
+    if (!payload) {
+      showNotification("Select an audit and payload options first.", { tone: "warning" });
+      return;
+    }
+    downloadPayloadJson(payload);
+    showNotification("Payload downloaded as JSON.", { tone: "success" });
+  });
+}
+
 if (elements.storeManagerLocaleSelect) {
   elements.storeManagerLocaleSelect.addEventListener("change", (event) => {
     state.storeManagerLocale = event.target.value;
@@ -2755,6 +2945,10 @@ async function init() {
   renderRoleLayout();
   renderAuditTypeSelectOptions();
   renderAdminFilters();
+  renderPayloadBuilderAudits();
+  renderPayloadBuilderTasks();
+  updatePayloadBuilderVisibility();
+  renderPayloadBuilderOutput();
   renderAuditListFilters();
   renderTaskListAuditorFilter();
   ensureSelectedAudit();
