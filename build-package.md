@@ -2,15 +2,16 @@
 
 ## A) Architecture (1 page)
 **Components**
-- **SharePoint Lists**: StoreContacts, AuditFollowUps, AuditTasks, ReminderRules, TaskSubmissions (optional but recommended for resubmissions).
+- **SharePoint Lists**: AuditFollowUps, AuditTasks, ReminderRules, TaskSubmissions (optional but recommended for resubmissions).
+- **SharePoint Excel file**: StoreContacts.xlsx (contacts master in a SharePoint folder).
 - **SharePoint Document Library**: ProofLibrary (stores proof images by task and submission).
 - **Power Apps Canvas App**: Single app for audit creation, task management, proof submission, and review.
 - **Power Automate Cloud Flows**: Reminders/escalations, proof submission notification, approve/reject notification, optional task creation automation.
 - **Outlook + Teams**: Notification channels.
 
 **Data Flow (high level)**
-1. Auditor creates **AuditFollowUp** record in Power Apps, referencing **StoreContacts** by *Store / Dealer Code*.
-2. Auditor creates **AuditTasks** for failed points (manual or bulk entry). Each task is assigned to SM from StoreContacts.
+1. Auditor creates **AuditFollowUp** record in Power Apps, referencing **StoreContacts.xlsx** by *Store / Dealer Code*.
+2. Auditor creates **AuditTasks** for failed points (manual or bulk entry). Each task is assigned to SM from StoreContacts.xlsx.
 3. Store submits proof in Power Apps, creating a **TaskSubmissions** record and uploading files to **ProofLibrary** folder for that task.
 4. Reviewer approves/rejects in Power Apps; task status updates and notifications are sent.
 5. Scheduled flow reads **ReminderRules** and **AuditTasks** to send reminders/escalations based on due dates.
@@ -26,46 +27,45 @@
 
 ## B) Data Model (SharePoint)
 
-### 1) StoreContacts (SharePoint List)
-**Purpose**: Master reference imported from Excel. *Store / Dealer Code* is the key used in all lookups.
+### 1) StoreContacts (Excel file in SharePoint)
+**Purpose**: Master reference stored as an Excel file in a SharePoint folder. *Store / Dealer Code* is the key used in all lookups.
+
+**Storage location**
+- SharePoint library: `Documents/ContactMaster/StoreContacts.xlsx`
+- Table name inside Excel: `StoreContactsTable`
 
 **Columns** (use exact names from Excel):
-- Brand (Single line of text)
-- Store / Dealer Code (Single line of text) **Required, Indexed, Unique**
-- Cost center (Single line of text)
-- ROS (Single line of text)
-- Prov (Single line of text)
-- City (Single line of text)
-- Postal code (Single line of text)
-- Location Name (Single line of text)
-- Store Phone # (Single line of text)
-- Director (Single line of text)
-- Director email (Single line of text)
-- RM (Single line of text)
-- RM Email (Single line of text)
-- SM (Single line of text)
-- SM Email (Single line of text)
-- SM Cellphone (Single line of text)
-- Type (Single line of text)
-- Store Email (Single line of text)
-- RM Cellphone (Single line of text)
-- Device / Access. Planner (Single line of text)
-- Support Expert Email (Single line of text)
-- Employee List (Multiple lines of text)
-- Store Tier (Single line of text)
-- Footprint (Single line of text)
-- Address (Single line of text)
-- Area Name (Single line of text)
-- Province Name (Single line of text)
-- Opening Date (Date only)
-
-**Indexes**
-- Store / Dealer Code (unique index)
-- RM Email (index)
-- Director email (index)
+- Brand
+- Store / Dealer Code **(PRIMARY KEY)**
+- Cost center
+- ROS
+- Prov
+- City
+- Postal code
+- Location Name
+- Store Phone #
+- Director
+- Director email
+- RM
+- RM Email
+- SM
+- SM Email
+- SM Cellphone
+- Type
+- Store Email
+- RM Cellphone
+- Device / Access. Planner
+- Support Expert Email
+- Employee List
+- Store Tier
+- Footprint
+- Address
+- Area Name
+- Province Name
+- Opening Date
 
 **Relationships**
-- Used as lookup from AuditFollowUps and AuditTasks based on Store / Dealer Code.
+- Used as lookup source (via Excel connector) for AuditFollowUps and AuditTasks by Store / Dealer Code.
 
 ---
 
@@ -75,7 +75,7 @@
 **Columns**
 - Title (Single line of text) — **Audit Identifier** (e.g., `AUD-2025-001`) **Required**
 - Store / Dealer Code (Single line of text) **Required, Indexed**
-- Store Name (Single line of text) — derived from StoreContacts.Location Name
+- Store Name (Single line of text) — derived from StoreContactsTable.Location Name
 - Audit Date (Date only) **Required**
 - Audit Completed By (Person or Group) **Required**
 - AI Summary (Multiple lines of text, enhanced rich text)
@@ -101,7 +101,7 @@
 - AuditFollowUpId (Lookup to AuditFollowUps: Title) **Required**
 - Store / Dealer Code (Single line of text) **Required, Indexed**
 - Due Date (Date only) **Required**
-- Assigned To Email (Single line of text) — default SM Email from StoreContacts **Required**
+- Assigned To Email (Single line of text) — default SM Email from StoreContactsTable **Required**
 - Assigned To Name (Single line of text) — default SM
 - Status (Choice) **Required**: `Not Started`, `Proof Submitted`, `Rejected`, `Accepted`, `Closed`
 - Overdue (Yes/No) — calculated by flow or Power Apps
@@ -189,31 +189,24 @@
 
 ## C) Import strategy for the Excel contact list
 
-### Option 1: One-time import + periodic refresh (recommended)
-**Best for:** Stable contact list with occasional updates.
+**StoreContacts remains Excel-only** (per requirement). No SharePoint list is created for contacts.
+
+### Option 1: One-time setup + ongoing edits in Excel (recommended)
+**Best for:** Excel remains the system of record.
 
 **Steps**
 1. Store the Excel file in SharePoint (e.g., `Documents/ContactMaster/StoreContacts.xlsx`).
-2. Use **SharePoint: Import spreadsheet** to create or refresh `StoreContacts` list.
-3. After import, verify `Store / Dealer Code` is unique and indexed.
-4. For periodic refresh:
-   - Export SharePoint list to Excel, update rows, then re-import.
-   - Or use a Power Automate sync (see Option 2).
+2. Format the data as a table named `StoreContactsTable`.
+3. Power Apps and Power Automate read directly from the Excel table using the **Excel Online (Business)** connector.
+4. Business users edit the Excel file in SharePoint; changes are picked up by Power Apps/Flows without sync.
 
-### Option 2: Power Automate sync from Excel in SharePoint (non-premium)
-**Best for:** Continuous updates by business users.
+### Option 2: Create a cached SharePoint list (optional performance cache)
+**Best for:** Large datasets or delegation limits in Power Apps.
 
 **Steps**
-1. Keep Excel file in SharePoint library; ensure table name is `StoreContactsTable`.
-2. Create a scheduled flow (daily or hourly).
-3. Flow outline:
-   - Trigger: Recurrence
-   - Action: **List rows present in a table** (Excel Online (Business))
-   - For each row:
-     - **Get items** from `StoreContacts` where `Store / Dealer Code` equals Excel row.
-     - If exists → **Update item**.
-     - If not exists → **Create item**.
-4. Add basic error handling: log failures to a SharePoint list (optional).
+1. Keep Excel file as source of truth.
+2. Create a scheduled flow (daily/hourly) to copy Excel rows into a SharePoint list `StoreContactsCache`.
+3. Power Apps reads from `StoreContactsCache` for performance, but Excel remains authoritative.
 
 ---
 
@@ -234,7 +227,7 @@
 **OnSelect (btnSearch)**
 ```powerfx
 Set(varDealerCode, Trim(txtDealerCode.Text));
-Set(varStore, LookUp(StoreContacts, 'Store / Dealer Code' = varDealerCode));
+Set(varStore, LookUp(StoreContactsTable, 'Store / Dealer Code' = varDealerCode));
 If(IsBlank(varStore), Notify("Store not found", NotificationType.Error), Navigate(scrCreateAudit));
 ```
 
@@ -381,7 +374,7 @@ Patch(AuditTasks, ThisItem, {
 2. For each task:
    - Calculate `DaysToDue` = difference between Due Date and utcNow().
    - Get ReminderRules where Enabled = Yes and DaysBeforeDue matches DaysToDue (or -1 for overdue).
-   - Resolve recipients from StoreContacts using Store / Dealer Code.
+   - Resolve recipients from **StoreContactsTable (Excel)** using Store / Dealer Code.
 3. Send Teams or Email based on rule.
 
 **Key Expression (DaysToDue)**
@@ -450,7 +443,7 @@ int(div(sub(ticks(items('Apply_to_each_Task')?['Due Date']), ticks(utcNow())), 8
 8. Reviewer rejects → task status Rejected, store notified.
 9. Rejected task allows resubmission.
 10. Missing SM email → flow logs error and notifies admin.
-11. RM and Director emails resolved correctly from StoreContacts.
+11. RM and Director emails resolved correctly from StoreContacts.xlsx.
 12. Store user can only see their tasks.
 13. RM sees tasks for assigned stores.
 14. Proof files saved in correct folder path.
